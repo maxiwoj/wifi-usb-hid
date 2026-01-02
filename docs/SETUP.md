@@ -236,32 +236,59 @@ Test if computer recognizes Pro Micro as HID device:
 
 ## 6. First Use
 
-### 6.1 Connect to WiFi Setup
+### 6.1 Understanding WiFi Behavior
 
-On first boot, NodeMCU creates a WiFi access point:
+The device features **intelligent automatic WiFi management**:
+
+**On Every Startup:**
+1. Device attempts to connect to the **last saved WiFi network**
+2. If no saved network exists OR connection fails, device automatically enters **Access Point (AP) mode**
+3. In AP mode, creates WiFi network: **"USB-HID-Setup"** (password: **12345678**)
+
+**Important:** All HID control features (keyboard, mouse, trackpad, scripts) work in **both AP mode and Station mode**. You can use the device immediately in AP mode without configuring WiFi!
+
+### 6.2 Connect to WiFi Setup (AP Mode)
+
+On first boot (or if WiFi connection fails), the device creates its own WiFi access point:
 
 1. On your phone or computer, look for WiFi network: **USB-HID-Setup**
 2. Connect using password: **12345678**
 3. Open web browser
 4. Navigate to: **http://192.168.4.1**
 
-You should see the web interface!
+You should see the web interface! **All features are fully functional in this mode.**
 
-### 6.2 Configure WiFi
+### 6.3 Configure WiFi (Optional)
 
-1. In the web interface, click **WiFi Settings**
-2. Click **Scan Networks**
+To connect the device to your home/office WiFi network:
+
+1. In the web interface, click **WiFi Settings** button
+2. Click **Scan Networks** to see available WiFi networks
 3. Wait for network list to appear
-4. Click on your network name (or enter manually)
+4. Click on your network name (or enter SSID manually)
 5. Enter WiFi password
 6. Click **Save & Connect**
-7. Device will restart and connect to your WiFi
+7. Device will save credentials and restart
 
-**Note:** Device will remember this WiFi network. On future boots, it will automatically connect.
+![WiFi Configuration](resource/wifiConfiguration.png)
+*WiFi configuration interface with network scanner*
 
-### 6.3 Find Device IP Address
+**After Configuration:**
+- Device automatically connects to your WiFi on every startup
+- If connection fails, it falls back to AP mode
+- WiFi credentials are saved permanently in EEPROM
+- You can reconfigure WiFi anytime by accessing the Settings page
+- All features work in both AP and Station modes
 
-After WiFi configuration:
+**Why Configure WiFi?**
+- Access device from anywhere on your network (not just direct connection)
+- Control from multiple devices simultaneously
+- Use while connected to your regular WiFi network
+- More convenient for permanent installations
+
+### 6.4 Find Device IP Address (Station Mode)
+
+After successfully connecting to your WiFi network:
 
 **Option 1: Serial Monitor**
 1. Open Serial Monitor on NodeMCU (115200 baud)
@@ -277,13 +304,24 @@ After WiFi configuration:
 1. Use network scanning app (e.g., Fing, Advanced IP Scanner)
 2. Look for ESP8266 device
 
-### 6.4 Access Web Interface
+**Option 4: Check Web Interface**
+1. The device status is shown at the top of the web interface
+2. IP address, WiFi mode, and network name are displayed
 
-1. Open web browser on any device on same network
-2. Navigate to NodeMCU's IP address (e.g., http://192.168.1.100)
-3. You'll see the main control interface
+### 6.5 Access Web Interface
 
-### 6.5 Test Basic Functions
+**In AP Mode:**
+- Navigate to: **http://192.168.4.1**
+
+**In Station Mode (After WiFi Configuration):**
+- Navigate to NodeMCU's IP address (e.g., http://192.168.1.100)
+
+You'll see the main control interface with all features available:
+
+![Web Interface](resource/UI_screenshot.png)
+*The main control interface - works identically in both AP and Station modes*
+
+### 6.6 Test Basic Functions
 
 Try these quick tests:
 
@@ -298,15 +336,35 @@ Try these quick tests:
 3. Click **Type** button
 4. Text should appear in Notepad
 
+![Type Text Feature](resource/typeText.png)
+
 **Test 3: Mouse Control**
 1. In web interface, click arrow buttons in Mouse Control
 2. Mouse cursor should move on target computer
+3. Try the live trackpad by dragging on it to move the mouse smoothly
+
+![Mouse Control](resource/mouseControl.png)
 
 **Test 4: Mouse Jiggler**
 1. Toggle Mouse Jiggler switch to ON
 2. Watch mouse cursor on target computer
 3. It should move slightly every 2 seconds
 4. Pro Micro LED should blink with each movement
+
+**Test 5: Quick Scripts**
+1. Select your operating system from the OS dropdown
+2. Click one of the quick script buttons (e.g., "Open Editor")
+3. The corresponding application should launch on your computer
+
+![Quick Scripts](resource/QuickScripts.png)
+
+**Activity Log**
+
+As you perform these tests, you'll see all actions logged in real-time at the bottom of the interface:
+
+![Activity Log](resource/ActivityLog.png)
+
+The activity log shows timestamps and descriptions of all commands sent, making it easy to track and debug your actions.
 
 **If all tests pass:** 🎉 Your system is working perfectly!
 

@@ -8,6 +8,9 @@ The connection between NodeMCU and Pro Micro uses serial communication (UART) fo
 
 **Important:** The NodeMCU is powered by the Pro Micro. Only ONE USB cable is needed (to Pro Micro).
 
+![Connected Hardware Example](resource/connected_picture.jpeg)
+*Example of NodeMCU and Pro Micro connected together*
+
 ## Connection Summary
 
 | NodeMCU Pin | Pro Micro Pin | Wire Color Suggestion | Description        |

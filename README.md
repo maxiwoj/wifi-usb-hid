@@ -2,6 +2,8 @@
 
 Remote control your computer's keyboard and mouse over WiFi using two microcontrollers - a powerful and flexible USB HID automation tool.
 
+![Web Interface](docs/resource/UI_screenshot.png)
+
 ## Description
 
 WiFi USB HID Control is a dual-microcontroller system that allows you to remotely control a computer's keyboard and mouse functions over WiFi. The system uses a Pro Micro (ATmega32U4) to act as a USB HID device and a NodeMCU (ESP8266) to provide WiFi connectivity with a web-based control interface.
@@ -30,6 +32,9 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
 - **Breadboard** (optional) - For easy connection during testing
 - **1× Micro-USB Cable** - For power and programming (Pro Micro only)
 - **1× Micro-USB Cable** (optional) - Only needed for programming NodeMCU initially
+
+![Connected Hardware](docs/resource/connected_picture.jpeg)
+*Example of NodeMCU and Pro Micro connected together*
 
 ## Software Requirements
 
@@ -87,13 +92,51 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
 - OS-specific quick scripts
 - DuckyScript executor
 
+#### Type Text
+![Type Text Feature](docs/resource/typeText.png)
+
+#### Mouse Control with Live Trackpad
+![Mouse Control](docs/resource/mouseControl.png)
+*Live trackpad with adjustable sensitivity and directional controls*
+
+
+#### Quick Scripts
+![Quick Scripts](docs/resource/QuickScripts.png)
+*OS-specific quick scripts for common tasks*
+
+#### Activity Log
+![Activity Log](docs/resource/ActivityLog.png)
+*Real-time activity logging shows all commands and actions*
+
 ### WiFi Management
-- Automatic connection to saved network
-- Fallback to AP mode if connection fails
-- EEPROM storage for credentials
-- Web-based WiFi configuration
-- Network scanner
-- Automatic restart after configuration
+
+The device features intelligent WiFi management with automatic fallback:
+
+**Automatic Connection:**
+- On startup, attempts to connect to the last saved WiFi network
+- If no saved network or connection fails, automatically switches to Access Point (AP) mode
+- EEPROM storage ensures WiFi credentials persist across reboots
+
+**Access Point Mode:**
+- Creates WiFi network named **"USB-HID-Setup"** (password: **12345678**)
+- All HID control features remain fully functional in AP mode
+- Allows WiFi configuration through web interface at **192.168.4.1**
+- Built-in network scanner helps find available networks
+
+**Station Mode (Connected to WiFi):**
+- Connects to your home/office network
+- Accessible from any device on the same network
+- IP address shown on device status display
+- Can be reconfigured anytime through the web interface
+
+![WiFi Configuration](docs/resource/wifiConfiguration.png)
+*WiFi configuration interface with network scanner*
+
+**Configuration Persistence:**
+- WiFi credentials saved automatically when configured
+- Device remembers settings even after power loss
+- Easy reconfiguration through Settings page
+- Automatic restart after applying new settings
 
 ## Quick Start
 
@@ -102,9 +145,12 @@ For experienced users who want to get started quickly:
 1. **Wire the devices** - Connect 4 wires: VCC→Vin (power), GND→GND (ground), TX→RX and RX→TX (crossed, data)
 2. **Upload Pro Micro code** - Select "Arduino Leonardo" board and upload `pro-micro/pro-micro.ino`
 3. **Upload NodeMCU code** - Select "NodeMCU 1.0" board and upload `nodemcu/nodemcu.ino`
-4. **Connect via single USB** - Connect only Pro Micro to computer (powers both devices)
-5. **Configure WiFi** - Connect to "USB-HID-Setup" AP (password: 12345678), visit 192.168.4.1/setup
-6. **Use the interface** - After WiFi configuration, access the web interface at the device's IP address
+4. **Upload web files to NodeMCU** - Use "ESP8266 Sketch Data Upload" to upload the `nodemcu/data/` folder to LittleFS
+5. **Connect via single USB** - Connect only Pro Micro to computer (powers both devices)
+6. **Access the interface** - Connect to "USB-HID-Setup" WiFi (password: 12345678), visit http://192.168.4.1
+7. **Use immediately** - All features work in AP mode! Optionally configure WiFi to connect to your network
+
+**Note:** Device automatically tries saved WiFi on startup, falls back to AP mode if connection fails. All features work in both modes.
 
 ## Detailed Documentation
 
