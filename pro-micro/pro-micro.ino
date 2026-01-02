@@ -177,6 +177,30 @@ void processCommand(String cmd) {
     Keyboard.release(KEY_LEFT_GUI);
     Serial1.println("OK:GUI+Alt+Space");
   }
+  else if (cmd == "GUI_TAB") {
+    // Command+Tab (macOS app switcher) or Windows+Tab
+    Keyboard.press(KEY_LEFT_GUI);
+    Keyboard.press(KEY_TAB);
+    delay(100);
+    Keyboard.releaseAll();
+    Serial1.println("OK:GUI+Tab");
+  }
+  else if (cmd == "GUI_H") {
+    // Command+H (Hide app on macOS)
+    Keyboard.press(KEY_LEFT_GUI);
+    Keyboard.press('h');
+    delay(100);
+    Keyboard.releaseAll();
+    Serial1.println("OK:GUI+H");
+  }
+  else if (cmd == "GUI_W") {
+    // Command+W (Close window on macOS) or Windows+W
+    Keyboard.press(KEY_LEFT_GUI);
+    Keyboard.press('w');
+    delay(100);
+    Keyboard.releaseAll();
+    Serial1.println("OK:GUI+W");
+  }
 
   // Keyboard shortcuts
   else if (cmd == "ALT_TAB") {

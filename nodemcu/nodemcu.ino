@@ -321,6 +321,12 @@ void parseDuckyLine(String line) {
       sendCommandToProMicro("GUI_D");
     } else if (key == "SPACE") {
       sendCommandToProMicro("GUI_SPACE");
+    } else if (key == "TAB" || key == "tab") {
+      sendCommandToProMicro("GUI_TAB");
+    } else if (key == "h" || key == "H") {
+      sendCommandToProMicro("GUI_H");
+    } else if (key == "w" || key == "W") {
+      sendCommandToProMicro("GUI_W");
     } else {
       sendCommandToProMicro("GUI_" + key);
     }
@@ -659,6 +665,15 @@ String getMainHTML() {
     </div>
 
     <div class="card">
+      <h2>OS Selection</h2>
+      <select id="osSelect">
+        <option value="Windows">Windows</option>
+        <option value="MacOS">MacOS</option>
+        <option value="Linux">Linux</option>
+      </select>
+    </div>
+
+    <div class="card">
       <h2>Mouse Jiggler</h2>
       <div class="jiggler-control">
         <div class="toggle-switch" id="jigglerToggle" onclick="toggleJiggler()"></div>
@@ -668,14 +683,8 @@ String getMainHTML() {
 
     <div class="card">
       <h2>Quick Actions</h2>
-      <div class="button-grid">
-        <button class="btn btn-primary" onclick="sendCommand('GUI_R')">GUI+R</button>
-        <button class="btn btn-primary" onclick="sendCommand('GUI SPACE')">GUI+Space</button>
-        <button class="btn btn-primary" onclick="sendCommand('GUI_D')">GUI+D</button>
-        <button class="btn btn-primary" onclick="sendCommand('ALT_TAB')">Alt+Tab</button>
-        <button class="btn btn-success" onclick="sendCommand('ENTER')">Enter</button>
-        <button class="btn btn-warning" onclick="sendCommand('ESC')">Escape</button>
-        <button class="btn btn-info" onclick="sendCommand('TAB')">Tab</button>
+      <div class="button-grid" id="quickActions">
+        <!-- Buttons will be dynamically generated based on OS selection -->
       </div>
     </div>
 
@@ -718,15 +727,6 @@ String getMainHTML() {
         <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
         <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>OS Selection</h2>
-      <select id="osSelect">
-        <option value="Windows">Windows</option>
-        <option value="MacOS">MacOS</option>
-        <option value="Linux">Linux</option>
-      </select>
     </div>
 
     <div class="card">
@@ -875,8 +875,59 @@ STRING Hello World!"></textarea>
       });
     }
 
-    // Initial log
+    function updateQuickActions() {
+      const os = document.getElementById('osSelect').value;
+      const quickActionsDiv = document.getElementById('quickActions');
+      quickActionsDiv.innerHTML = '';
+
+      const actions = {
+        'Windows': [
+          { cmd: 'GUI_R', label: 'Win+R', desc: 'Run Dialog', class: 'btn-primary' },
+          { cmd: 'GUI_SPACE', label: 'Win+Space', desc: 'Input Switch', class: 'btn-primary' },
+          { cmd: 'GUI_D', label: 'Win+D', desc: 'Show Desktop', class: 'btn-primary' },
+          { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
+          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
+          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
+          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
+        ],
+        'MacOS': [
+          { cmd: 'GUI_SPACE', label: '⌘+Space', desc: 'Spotlight', class: 'btn-primary' },
+          { cmd: 'GUI_TAB', label: '⌘+Tab', desc: 'Switch Apps', class: 'btn-primary' },
+          { cmd: 'GUI_D', label: '⌘+D', desc: 'Show Desktop', class: 'btn-primary' },
+          { cmd: 'GUI_H', label: '⌘+H', desc: 'Hide App', class: 'btn-primary' },
+          { cmd: 'GUI_W', label: '⌘+W', desc: 'Close Window', class: 'btn-primary' },
+          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
+          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
+          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
+        ],
+        'Linux': [
+          { cmd: 'GUI', label: 'Super', desc: 'Super Key', class: 'btn-primary' },
+          { cmd: 'GUI_SPACE', label: 'Super+Space', desc: 'App Launcher', class: 'btn-primary' },
+          { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
+          { cmd: 'CTRL_ALT_T', label: 'Ctrl+Alt+T', desc: 'Terminal', class: 'btn-primary' },
+          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
+          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
+          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
+        ]
+      };
+
+      const osActions = actions[os] || actions['Windows'];
+      osActions.forEach(action => {
+        const button = document.createElement('button');
+        button.className = 'btn ' + action.class;
+        button.setAttribute('onclick', "sendCommand('" + action.cmd + "')");
+        button.setAttribute('title', action.desc);
+        button.textContent = action.label;
+        quickActionsDiv.appendChild(button);
+      });
+    }
+
+    // Update Quick Actions when OS selection changes
+    document.getElementById('osSelect').addEventListener('change', updateQuickActions);
+
+    // Initial log and setup
     log('Interface loaded - Ready to use');
+    updateQuickActions();
   </script>
 </body>
 </html>
