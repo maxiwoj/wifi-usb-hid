@@ -39,14 +39,24 @@ This guide will walk you through the complete setup process from installing the 
 9. Wait for installation to complete
 10. Close Board Manager
 
-### 1.3 Verify Libraries
-
-The following libraries should be available:
+### 1.3 Install Required Libraries
 
 **Built-in Arduino libraries** (no installation needed):
 - Keyboard
 - Mouse
 - EEPROM
+
+**Optional Libraries for OLED Display:**
+
+If you have a 128x64 I2C OLED display, install these libraries:
+
+1. Open **Tools → Manage Libraries** (or **Sketch → Include Library → Manage Libraries**)
+2. Search for "Adafruit GFX"
+3. Install **"Adafruit GFX Library"**
+4. Search for "Adafruit SSD1306"
+5. Install **"Adafruit SSD1306"**
+
+**Note:** System works fully without display. Display is optional for status monitoring.
 
 **ESP8266 libraries** (included with ESP8266 board package):
 - ESP8266WiFi
@@ -191,6 +201,8 @@ Before connecting, review [WIRING.md](WIRING.md) for detailed instructions.
 
 ### 4.2 Make Connections
 
+**Core Connections (Required):**
+
 1. **Disconnect both devices from USB**
 2. Connect 4 jumper wires as described in WIRING.md:
    - **VCC to Vin** (power - red wire recommended)
@@ -200,6 +212,28 @@ Before connecting, review [WIRING.md](WIRING.md) for detailed instructions.
 3. **Double-check all connections**
 4. Verify TX/RX are **crossed**, not straight through
 5. Verify VCC→Vin power connection is secure
+
+**Optional OLED Display Connection:**
+
+If you have a 128x64 I2C OLED display:
+
+1. Connect display to NodeMCU:
+   - Display **VCC** → NodeMCU **3.3V** (power for display)
+   - Display **GND** → NodeMCU **GND** (ground)
+   - Display **SDA** → NodeMCU **D3** (GPIO4) (I2C data)
+   - Display **SCL** → NodeMCU **D4** (GPIO5) (I2C clock)
+
+2. The display will show:
+   - Device status (AP mode or Station mode)
+   - IP address or WiFi credentials
+   - Current actions (script saved, jiggler on/off, etc.)
+
+**⚠️ Important:**
+- Use pins **D3 (SDA)** and **D4 (SCL)** - these are the standard I2C pins
+- **DO NOT use D0** - GPIO16 (D0) does not support I2C and won't work!
+- Power display from **3.3V**, not Vin (5V will damage it)
+
+**Note:** System works fully without display. Display is completely optional.
 
 ### 4.3 Power On
 

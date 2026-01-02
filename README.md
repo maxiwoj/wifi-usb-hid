@@ -23,9 +23,11 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
 - **REST API** - Programmatic control via HTTP endpoints
 - **Network Scanner** - Built-in WiFi network scanner
 - **Activity Logging** - Real-time activity log in web interface
+- **Optional OLED Display** - 128x64 display shows status and actions in real-time
 
 ## Hardware Requirements
 
+### Core Components
 - **Pro Micro (ATmega32U4)** - 5V/16MHz version (acts as USB HID device)
 - **NodeMCU (ESP8266)** - CP2102 version recommended (provides WiFi connectivity)
 - **4× Jumper Wires** - Male-to-male (power, ground, TX, RX)
@@ -35,6 +37,15 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
 
 ![Connected Hardware](docs/resource/connected_picture.jpeg)
 *Example of NodeMCU and Pro Micro connected together*
+
+### Optional Display
+- **128x64 I2C OLED Display** (optional) - Shows device status and actions in real-time
+  - Connects to NodeMCU pins: **D3 (SDA)**, **D4 (SCL)**
+  - **Important:** Use D1/D2, NOT D0! GPIO16 (D0) doesn't support I2C
+  - Displays WiFi status (IP address or AP credentials)
+  - Shows current actions (script saved, jiggler on/off, etc.)
+  - System works fully without display
+
 
 ## Software Requirements
 
@@ -46,6 +57,9 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
   - ESP8266WiFi (included with ESP8266 board package)
   - ESP8266WebServer (included with ESP8266 board package)
   - EEPROM (built-in)
+- **Optional Libraries (for OLED display):**
+  - Adafruit GFX Library (install via Library Manager)
+  - Adafruit SSD1306 (install via Library Manager)
 
 ### Installing ESP8266 Support
 
