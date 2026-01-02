@@ -316,6 +316,164 @@ let jigglerEnabled = false;
         });
     }
 
+    // Trackpad functionality
+    (function() {
+      const trackpad = document.getElementById('trackpad');
+      const cursor = document.getElementById('trackpadCursor');
+      const sensitivitySlider = document.getElementById('sensitivity');
+      const sensitivityValue = document.getElementById('sensitivityValue');
+
+      let isDragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      let sensitivity = parseFloat(sensitivitySlider.value);
+      let clickStartTime = 0;
+      let hasMoved = false;
+
+      // Update sensitivity display
+      function updateSensitivityDisplay() {
+        sensitivity = parseFloat(sensitivitySlider.value);
+        sensitivityValue.textContent = sensitivity.toFixed(1) + 'x';
+      }
+
+      sensitivitySlider.addEventListener('input', updateSensitivityDisplay);
+
+      // Helper function to check if point is inside trackpad
+      function isInsideTrackpad(clientX, clientY) {
+        const rect = trackpad.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right &&
+               clientY >= rect.top && clientY <= rect.bottom;
+      }
+
+      // Handle mouse movement (for both mouse and touch)
+      function handleMove(clientX, clientY) {
+        const deltaX = Math.round((clientX - lastX) * sensitivity);
+        const deltaY = Math.round((clientY - lastY) * sensitivity);
+
+        if (deltaX !== 0 || deltaY !== 0) {
+          sendCommand('MOUSE_MOVE:' + deltaX + ',' + deltaY);
+          lastX = clientX;
+          lastY = clientY;
+          hasMoved = true;
+        }
+
+        // Update cursor position
+        const rect = trackpad.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+      }
+
+      // Mouse events
+      trackpad.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        hasMoved = false;
+        clickStartTime = Date.now();
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        const rect = trackpad.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+        cursor.style.display = 'block';
+
+        e.preventDefault();
+      });
+
+      trackpad.addEventListener('mousemove', function(e) {
+        if (isDragging) {
+          handleMove(e.clientX, e.clientY);
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('mouseup', function(e) {
+        if (isDragging) {
+          const clickDuration = Date.now() - clickStartTime;
+
+          // If it was a quick click without much movement, treat as click
+          if (!hasMoved && clickDuration < 200) {
+            sendCommand('MOUSE_LEFT');
+          }
+
+          isDragging = false;
+          cursor.style.display = 'none';
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('mouseleave', function(e) {
+        if (isDragging) {
+          isDragging = false;
+          cursor.style.display = 'none';
+        }
+      });
+
+      // Handle double-click on trackpad
+      trackpad.addEventListener('dblclick', function(e) {
+        sendCommand('MOUSE_DOUBLE');
+        e.preventDefault();
+      });
+
+      // Touch events for mobile/tablet support
+      trackpad.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          hasMoved = false;
+          clickStartTime = Date.now();
+          const touch = e.touches[0];
+          lastX = touch.clientX;
+          lastY = touch.clientY;
+
+          const rect = trackpad.getBoundingClientRect();
+          const x = touch.clientX - rect.left;
+          const y = touch.clientY - rect.top;
+          cursor.style.left = x + 'px';
+          cursor.style.top = y + 'px';
+          cursor.style.display = 'block';
+
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchmove', function(e) {
+        if (isDragging && e.touches.length === 1) {
+          const touch = e.touches[0];
+          handleMove(touch.clientX, touch.clientY);
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchend', function(e) {
+        if (isDragging) {
+          const clickDuration = Date.now() - clickStartTime;
+
+          // If it was a quick tap without much movement, treat as click
+          if (!hasMoved && clickDuration < 200) {
+            sendCommand('MOUSE_LEFT');
+          }
+
+          isDragging = false;
+          cursor.style.display = 'none';
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchcancel', function(e) {
+        if (isDragging) {
+          isDragging = false;
+          cursor.style.display = 'none';
+          e.preventDefault();
+        }
+      });
+
+      // Initialize sensitivity display
+      updateSensitivityDisplay();
+    })();
+
     // Update Quick Actions when OS selection changes
     document.getElementById('osSelect').addEventListener('change', updateQuickActions);
 

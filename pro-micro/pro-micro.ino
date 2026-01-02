@@ -28,7 +28,7 @@ String commandBuffer = "";
 
 void setup() {
   // Initialize Serial1 for communication with NodeMCU (TX=1, RX=0)
-  Serial1.begin(115200);
+  Serial1.begin(74880);
 
   // Initialize USB HID
   Keyboard.begin();

@@ -513,7 +513,6 @@ String escapeJson(String str) {
 
 // Communication with Pro Micro
 void sendCommandToProMicro(String cmd) {
-  Serial.print("Sending command to Pro Micro: ");
   Serial.println(cmd);
   Serial.flush();
 }
