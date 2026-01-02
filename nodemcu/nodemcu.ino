@@ -400,8 +400,8 @@ bool deleteScriptFile(String name) {
 
 String getScriptNameFromFilename(String filename) {
   // Extract name from "/scripts_<name>.txt"
-  if (filename.startsWith("/scripts_") && filename.endsWith(".txt")) {
-    String name = filename.substring(9); // Skip "/scripts_"
+  if (filename.startsWith("scripts_") && filename.endsWith(".txt")) {
+    String name = filename.substring(8); // Skip "/scripts_"
     name = name.substring(0, name.length() - 4); // Remove ".txt"
     name.replace("_", " ");
     return name;
@@ -423,7 +423,7 @@ void handleListScripts() {
       String filename = dir.fileName();
 
       // Check if it's a script file (starts with "/scripts_")
-      if (filename.startsWith("/scripts_") && filename.endsWith(".txt")) {
+      if (filename.startsWith("scripts_") && filename.endsWith(".txt")) {
         if (!first) json += ",";
         first = false;
 
