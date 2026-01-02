@@ -46,6 +46,9 @@ Perfect for automation, remote testing, accessibility solutions, or educational 
   - Shows current actions (script saved, jiggler on/off, etc.)
   - System works fully without display
 
+![OLED Display Connected](docs/resource/display_connected_pic.jpeg)
+*Example of NodeMCU and Pro Micro connected together with a display*
+
 
 ## Software Requirements
 
