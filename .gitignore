@@ -1,0 +1,55 @@
+# Arduino build files
+*.hex
+*.elf
+*.bin
+*.map
+*.eep
+*.lss
+*.sym
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+
+# Build directories
+build/
+*.build/
+
+# Libraries (if vendored)
+libraries/
+
+# Credentials and sensitive data
+credentials.h
+secrets.h
+wifi_config.h
+
+# Log files
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
