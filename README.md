@@ -108,9 +108,9 @@ For experienced users who want to get started quickly:
 
 ## Detailed Documentation
 
-- **[WIRING.md](WIRING.md)** - Complete hardware connection guide with diagrams
-- **[SETUP.md](SETUP.md)** - Step-by-step setup instructions
-- **[API.md](API.md)** - REST API documentation and command reference
+- **[WIRING.md](docs/WIRING.md)** - Complete hardware connection guide with diagrams
+- **[SETUP.md](docs/SETUP.md)** - Step-by-step setup instructions
+- **[API.md](docs/API.md)** - REST API documentation and command reference
 
 ## Use Cases
 
