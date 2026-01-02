@@ -9,7 +9,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>WiFi USB HID Control</h1>
+      <div>
+        <h1>WiFi USB HID Control</h1>
+        <div style="font-size: 13px; color: #6b7280; margin-top: 5px;">
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">IP:</strong> <span id="deviceIP" style="font-family: monospace;">Loading...</span></span> &nbsp;|&nbsp;
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">Mode:</strong> <span id="wifiMode">Loading...</span></span> &nbsp;|&nbsp;
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">Network:</strong> <span id="networkSSID">Loading...</span></span>
+        </div>
+      </div>
       <div style="display: flex; gap: 10px; align-items: center;">
         <span class="status-badge" id="statusBadge">Connected</span>
         <button class="btn btn-info" onclick="location.href='/setup'">WiFi Settings</button>

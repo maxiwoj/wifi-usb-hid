@@ -290,6 +290,32 @@ let jigglerEnabled = false;
       });
     }
 
+    // Load and display device status
+    function loadDeviceStatus() {
+      fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('deviceIP').textContent = data.ip || 'Unknown';
+          document.getElementById('wifiMode').textContent = data.wifi_mode || 'Unknown';
+          document.getElementById('networkSSID').textContent = data.ssid || 'Unknown';
+
+          // Update status badge
+          if (data.connected) {
+            document.getElementById('statusBadge').textContent = 'Connected';
+            document.getElementById('statusBadge').style.background = '#10b981';
+          } else {
+            document.getElementById('statusBadge').textContent = 'AP Mode';
+            document.getElementById('statusBadge').style.background = '#f59e0b';
+          }
+        })
+        .catch(error => {
+          log('Error loading device status: ' + error);
+          document.getElementById('deviceIP').textContent = 'Error';
+          document.getElementById('wifiMode').textContent = 'Error';
+          document.getElementById('networkSSID').textContent = 'Error';
+        });
+    }
+
     // Update Quick Actions when OS selection changes
     document.getElementById('osSelect').addEventListener('change', updateQuickActions);
 
@@ -297,3 +323,4 @@ let jigglerEnabled = false;
     log('Interface loaded - Ready to use');
     updateQuickActions();
     loadSavedScripts();
+    loadDeviceStatus();
