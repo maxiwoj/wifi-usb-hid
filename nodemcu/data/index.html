@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi USB HID Control</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>WiFi USB HID Control</h1>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="status-badge" id="statusBadge">Connected</span>
+        <button class="btn btn-info" onclick="location.href='/setup'">WiFi Settings</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>OS Selection</h2>
+      <select id="osSelect">
+        <option value="Windows">Windows</option>
+        <option value="MacOS">MacOS</option>
+        <option value="Linux">Linux</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Mouse Jiggler</h2>
+      <div class="jiggler-control">
+        <div class="toggle-switch" id="jigglerToggle" onclick="toggleJiggler()"></div>
+        <span id="jigglerStatus">Disabled</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Actions</h2>
+      <div class="button-grid" id="quickActions">
+        <!-- Buttons will be dynamically generated based on OS selection -->
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Type Text</h2>
+      <input type="text" id="typeText" placeholder="Enter text to type...">
+      <button class="btn btn-primary" onclick="typeText()">Type</button>
+      <button class="btn btn-success" onclick="typeTextEnter()">Type + Enter</button>
+    </div>
+
+    <div class="card">
+      <h2>Mouse Control</h2>
+
+      <h3 style="margin-bottom: 10px; font-size: 16px; color: #667eea;">Live Trackpad</h3>
+      <div class="trackpad" id="trackpad">
+        <div class="trackpad-info">Drag to move mouse • Click to click • Double-click to double-click</div>
+        <div class="trackpad-cursor" id="trackpadCursor"></div>
+      </div>
+
+      <div class="sensitivity-control">
+        <label style="min-width: 80px;">Sensitivity:</label>
+        <input type="range" id="sensitivity" min="0.5" max="3" step="0.1" value="1.5">
+        <span id="sensitivityValue">1.5x</span>
+      </div>
+
+      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
+      <div class="mouse-grid">
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,-10')">↖</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,-10')">↑</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,-10')">↗</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,0')">←</button>
+        <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Click</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,0')">→</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,10')">↙</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,10')">↓</button>
+        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,10')">↘</button>
+      </div>
+      <div style="margin-top: 10px;">
+        <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Left Click</button>
+        <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
+        <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Scripts</h2>
+      <div class="button-grid">
+        <button class="btn btn-primary" onclick="runQuickScript('editor')">Open Editor</button>
+        <button class="btn btn-success" onclick="runQuickScript('terminal')">Terminal</button>
+        <button class="btn btn-warning" onclick="runQuickScript('calculator')">Calculator</button>
+        <button class="btn btn-info" onclick="runQuickScript('browser')">Browser</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>DuckyScript Executor</h2>
+      <textarea id="duckyScript" placeholder="Enter DuckyScript here...
+Example:
+GUI r
+DELAY 500
+STRING notepad
+ENTER
+DELAY 1000
+STRING Hello World!"></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="btn btn-danger" onclick="executeScript()">Execute Script</button>
+        <input type="text" id="scriptName" placeholder="Script name..." style="flex: 1; margin: 0;">
+        <button class="btn btn-success" onclick="saveScript()">Save Script</button>
+      </div>
+
+      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Saved Scripts</h3>
+      <button class="btn btn-info" onclick="loadSavedScripts()" style="margin-bottom: 10px;">Refresh List</button>
+      <div id="savedScriptsList" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">No saved scripts. Click "Refresh List" to load.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
