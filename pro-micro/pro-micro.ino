@@ -361,6 +361,14 @@ void processCommand(String cmd) {
     Mouse.click(MOUSE_LEFT);
     Serial1.println("OK:Double click");
   }
+  else if (cmd == "MOUSE_PRESS") {
+    Mouse.press(MOUSE_LEFT);
+    Serial1.println("OK:Mouse pressed");
+  }
+  else if (cmd == "MOUSE_RELEASE") {
+    Mouse.release(MOUSE_LEFT);
+    Serial1.println("OK:Mouse released");
+  }
 
   // Mouse scroll
   else if (cmd.startsWith("SCROLL:")) {

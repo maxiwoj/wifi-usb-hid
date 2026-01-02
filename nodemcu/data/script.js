@@ -329,6 +329,10 @@ let jigglerEnabled = false;
       let sensitivity = parseFloat(sensitivitySlider.value);
       let clickStartTime = 0;
       let hasMoved = false;
+      let lastClickTime = 0;
+      let isButtonHeld = false;
+      let usedDoubleClickForHold = false;
+      const DOUBLE_CLICK_THRESHOLD = 400; // ms
 
       // Update sensitivity display
       function updateSensitivityDisplay() {
@@ -367,11 +371,23 @@ let jigglerEnabled = false;
 
       // Mouse events
       trackpad.addEventListener('mousedown', function(e) {
+        const currentTime = Date.now();
+        const timeSinceLastClick = currentTime - lastClickTime;
+
         isDragging = true;
         hasMoved = false;
-        clickStartTime = Date.now();
+        clickStartTime = currentTime;
         lastX = e.clientX;
         lastY = e.clientY;
+
+        // Check if this is a double-click-and-hold gesture
+        if (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD && !isButtonHeld) {
+          // Second click within double-click time - hold the button
+          isButtonHeld = true;
+          usedDoubleClickForHold = true;
+          sendCommand('MOUSE_PRESS');
+          log('Mouse button held (drag to select)');
+        }
 
         const rect = trackpad.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -394,9 +410,20 @@ let jigglerEnabled = false;
         if (isDragging) {
           const clickDuration = Date.now() - clickStartTime;
 
+          // Release held button if active
+          if (isButtonHeld) {
+            sendCommand('MOUSE_RELEASE');
+            isButtonHeld = false;
+            log('Mouse button released');
+            // Clear the flag after a short delay to prevent dblclick event
+            setTimeout(function() {
+              usedDoubleClickForHold = false;
+            }, 100);
+          }
           // If it was a quick click without much movement, treat as click
-          if (!hasMoved && clickDuration < 200) {
+          else if (!hasMoved && clickDuration < 200) {
             sendCommand('MOUSE_LEFT');
+            lastClickTime = Date.now();
           }
 
           isDragging = false;
@@ -407,6 +434,13 @@ let jigglerEnabled = false;
 
       trackpad.addEventListener('mouseleave', function(e) {
         if (isDragging) {
+          // Release button if held when leaving trackpad
+          if (isButtonHeld) {
+            sendCommand('MOUSE_RELEASE');
+            isButtonHeld = false;
+            usedDoubleClickForHold = false;
+            log('Mouse button released (left trackpad)');
+          }
           isDragging = false;
           cursor.style.display = 'none';
         }
@@ -414,19 +448,34 @@ let jigglerEnabled = false;
 
       // Handle double-click on trackpad
       trackpad.addEventListener('dblclick', function(e) {
-        sendCommand('MOUSE_DOUBLE');
+        // Only send double-click if we didn't use it for button hold
+        if (!usedDoubleClickForHold) {
+          sendCommand('MOUSE_DOUBLE');
+        }
         e.preventDefault();
       });
 
       // Touch events for mobile/tablet support
       trackpad.addEventListener('touchstart', function(e) {
         if (e.touches.length === 1) {
+          const currentTime = Date.now();
+          const timeSinceLastClick = currentTime - lastClickTime;
+
           isDragging = true;
           hasMoved = false;
-          clickStartTime = Date.now();
+          clickStartTime = currentTime;
           const touch = e.touches[0];
           lastX = touch.clientX;
           lastY = touch.clientY;
+
+          // Check if this is a double-tap-and-hold gesture
+          if (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD && !isButtonHeld) {
+            // Second tap within double-tap time - hold the button
+            isButtonHeld = true;
+            usedDoubleClickForHold = true;
+            sendCommand('MOUSE_PRESS');
+            log('Mouse button held (drag to select)');
+          }
 
           const rect = trackpad.getBoundingClientRect();
           const x = touch.clientX - rect.left;
@@ -451,9 +500,17 @@ let jigglerEnabled = false;
         if (isDragging) {
           const clickDuration = Date.now() - clickStartTime;
 
+          // Release held button if active
+          if (isButtonHeld) {
+            sendCommand('MOUSE_RELEASE');
+            isButtonHeld = false;
+            usedDoubleClickForHold = false;
+            log('Mouse button released');
+          }
           // If it was a quick tap without much movement, treat as click
-          if (!hasMoved && clickDuration < 200) {
+          else if (!hasMoved && clickDuration < 200) {
             sendCommand('MOUSE_LEFT');
+            lastClickTime = Date.now();
           }
 
           isDragging = false;
@@ -464,6 +521,13 @@ let jigglerEnabled = false;
 
       trackpad.addEventListener('touchcancel', function(e) {
         if (isDragging) {
+          // Release button if held when touch is cancelled
+          if (isButtonHeld) {
+            sendCommand('MOUSE_RELEASE');
+            isButtonHeld = false;
+            usedDoubleClickForHold = false;
+            log('Mouse button released (touch cancelled)');
+          }
           isDragging = false;
           cursor.style.display = 'none';
           e.preventDefault();
