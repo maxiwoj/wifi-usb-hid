@@ -15,11 +15,15 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
+#include <FS.h>
 
-// EEPROM addresses
+// EEPROM addresses (for WiFi credentials only)
 #define EEPROM_SIZE 512
 #define SSID_ADDR 0
 #define PASS_ADDR 100
+
+// SPIFFS settings for script storage
+#define MAX_SCRIPT_NAME_LEN 32
 
 // WiFi AP settings
 #define AP_SSID "USB-HID-Setup"
@@ -35,14 +39,37 @@ ESP8266WebServer server(80);
 String currentSSID = "";
 String currentPassword = "";
 bool isAPMode = false;
+bool spiffsAvailable = false;
 
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
   delay(100);
 
-  // Initialize EEPROM
+  // Initialize EEPROM (for WiFi credentials)
   EEPROM.begin(EEPROM_SIZE);
+
+  // Initialize SPIFFS (for script storage)
+  // Note: SPIFFS must be uploaded via Tools > ESP8266 Sketch Data Upload in Arduino IDE
+  spiffsAvailable = SPIFFS.begin();
+  if (spiffsAvailable) {
+    Serial.println("SPIFFS mounted successfully");
+    
+    // Check SPIFFS info
+    FSInfo fs_info;
+    SPIFFS.info(fs_info);
+    Serial.print("SPIFFS Total bytes: ");
+    Serial.println(fs_info.totalBytes);
+    Serial.print("SPIFFS Used bytes: ");
+    Serial.println(fs_info.usedBytes);
+  } else {
+    Serial.println("Formatting SPIFFS...");
+    SPIFFS.format();
+    SPIFFS.begin();
+    Serial.println("SPIFFS initialization failed - script storage will not be available");
+    Serial.println("To enable SPIFFS: Tools > ESP8266 Sketch Data Upload in Arduino IDE");
+    Serial.println("Server will continue without SPIFFS support");
+  }
 
   // Try to connect to saved WiFi
   loadWiFiCredentials();
@@ -141,6 +168,9 @@ void writeStringToEEPROM(int addr, String data, int maxLen) {
   }
 }
 
+// Forward declarations
+String escapeJson(String str);
+
 // Web Server Setup
 void setupWebServer() {
   server.on("/", HTTP_GET, handleRoot);
@@ -152,11 +182,28 @@ void setupWebServer() {
   server.on("/api/wifi", HTTP_GET, handleGetWiFi);
   server.on("/api/wifi", HTTP_POST, handleSetWiFi);
   server.on("/api/scan", HTTP_GET, handleScan);
+  server.on("/api/scripts", HTTP_GET, handleListScripts);
+  server.on("/api/scripts", HTTP_POST, handleSaveScript);
+  server.on("/api/scripts/load", HTTP_POST, handleLoadScript);
+  server.on("/api/scripts/delete", HTTP_POST, handleDeleteScript);
 }
 
 // Web Server Handlers
 void handleRoot() {
+  Serial.println("handleRoot called - generating HTML");
+  
   String html = getMainHTML();
+  
+  Serial.print("HTML generated, length: ");
+  Serial.println(html.length());
+  
+  if (html.length() == 0) {
+    Serial.println("ERROR: HTML is empty! Sending error message");
+    server.send(500, "text/plain", "Error: HTML generation failed");
+    return;
+  }
+  
+  Serial.println("Sending HTML response...");
   server.send(200, "text/html", html);
 }
 
@@ -250,6 +297,207 @@ void handleScan() {
 
   json += "]";
   server.send(200, "application/json", json);
+}
+
+// Script Storage Functions (using SPIFFS)
+String getScriptFilename(String name) {
+  // Sanitize filename - remove invalid characters
+  String filename = name;
+  filename.replace(" ", "_");
+  filename.replace("/", "_");
+  filename.replace("\\", "_");
+  filename.replace("..", "_");
+  
+  // Truncate if too long
+  if (filename.length() > MAX_SCRIPT_NAME_LEN) {
+    filename = filename.substring(0, MAX_SCRIPT_NAME_LEN);
+  }
+  
+  return String("/scripts_") + filename + ".txt";
+}
+
+bool saveScriptToFile(String name, String script) {
+  if (!spiffsAvailable) {
+    Serial.println("SPIFFS not available for saving script");
+    return false;
+  }
+  
+  String filename = getScriptFilename(name);
+  
+  File file = SPIFFS.open(filename, "w");
+  if (!file) {
+    Serial.println("Failed to open file for writing: " + filename);
+    return false;
+  }
+  
+  // Write script content
+  file.print(script);
+  file.close();
+  
+  Serial.println("Script saved: " + filename);
+  return true;
+}
+
+String loadScriptFromFile(String name) {
+  if (!spiffsAvailable) {
+    Serial.println("SPIFFS not available for loading script");
+    return "";
+  }
+  
+  String filename = getScriptFilename(name);
+  
+  File file = SPIFFS.open(filename, "r");
+  if (!file) {
+    Serial.println("Failed to open file for reading: " + filename);
+    return "";
+  }
+  
+  String script = "";
+  while (file.available()) {
+    script += (char)file.read();
+  }
+  file.close();
+  
+  return script;
+}
+
+bool deleteScriptFile(String name) {
+  if (!spiffsAvailable) {
+    Serial.println("SPIFFS not available for deleting script");
+    return false;
+  }
+  
+  String filename = getScriptFilename(name);
+  
+  if (SPIFFS.exists(filename)) {
+    SPIFFS.remove(filename);
+    Serial.println("Script deleted: " + filename);
+    return true;
+  }
+  
+  return false;
+}
+
+String getScriptNameFromFilename(String filename) {
+  // Extract name from "/scripts_<name>.txt"
+  if (filename.startsWith("/scripts_") && filename.endsWith(".txt")) {
+    String name = filename.substring(9); // Skip "/scripts_"
+    name = name.substring(0, name.length() - 4); // Remove ".txt"
+    name.replace("_", " ");
+    return name;
+  }
+  return "";
+}
+
+// Script API Handlers
+void handleListScripts() {
+  String json = "[";
+  bool first = true;
+
+  // Check if SPIFFS is available
+  if (spiffsAvailable) {
+    // Iterate through all files in SPIFFS
+    Dir dir = SPIFFS.openDir("/");
+    while (dir.next()) {
+      String filename = dir.fileName();
+      
+      // Check if it's a script file (starts with "/scripts_")
+      if (filename.startsWith("/scripts_") && filename.endsWith(".txt")) {
+        if (!first) json += ",";
+        first = false;
+
+        String name = getScriptNameFromFilename(filename);
+        json += "{";
+        json += "\"name\":\"" + escapeJson(name) + "\"";
+        json += "}";
+      }
+    }
+  }
+
+  json += "]";
+  server.send(200, "application/json", json);
+}
+
+void handleSaveScript() {
+  if (server.hasArg("name") && server.hasArg("script")) {
+    String name = server.arg("name");
+    String script = server.arg("script");
+
+    if (name.length() == 0) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name cannot be empty\"}");
+      return;
+    }
+
+    if (name.length() > MAX_SCRIPT_NAME_LEN) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name too long\"}");
+      return;
+    }
+
+    if (saveScriptToFile(name, script)) {
+      server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script saved\"}");
+    } else {
+      server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save script\"}");
+    }
+  } else {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name or script parameter\"}");
+  }
+}
+
+void handleLoadScript() {
+  if (server.hasArg("name")) {
+    String name = server.arg("name");
+    String script = loadScriptFromFile(name);
+
+    if (script.length() == 0) {
+      server.send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+      return;
+    }
+
+    String json = "{";
+    json += "\"status\":\"ok\",";
+    json += "\"name\":\"" + escapeJson(name) + "\",";
+    json += "\"script\":\"" + escapeJson(script) + "\"";
+    json += "}";
+
+    server.send(200, "application/json", json);
+  } else {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+  }
+}
+
+void handleDeleteScript() {
+  if (server.hasArg("name")) {
+    String name = server.arg("name");
+
+    if (deleteScriptFile(name)) {
+      server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script deleted\"}");
+    } else {
+      server.send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+    }
+  } else {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+  }
+}
+
+String escapeJson(String str) {
+  String result = "";
+  for (int i = 0; i < str.length(); i++) {
+    char c = str[i];
+    if (c == '\\') {
+      result += "\\\\";
+    } else if (c == '"') {
+      result += "\\\"";
+    } else if (c == '\n') {
+      result += "\\n";
+    } else if (c == '\r') {
+      result += "\\r";
+    } else if (c == '\t') {
+      result += "\\t";
+    } else {
+      result += c;
+    }
+  }
+  return result;
 }
 
 // Communication with Pro Micro
@@ -407,8 +655,7 @@ String getQuickScript(String scriptName, String os) {
 }
 
 // HTML Pages
-String getMainHTML() {
-  return R"=====(
+const char MAIN_HTML[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
@@ -749,7 +996,17 @@ STRING notepad
 ENTER
 DELAY 1000
 STRING Hello World!"></textarea>
-      <button class="btn btn-danger" onclick="executeScript()">Execute Script</button>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="btn btn-danger" onclick="executeScript()">Execute Script</button>
+        <input type="text" id="scriptName" placeholder="Script name..." style="flex: 1; margin: 0;">
+        <button class="btn btn-success" onclick="saveScript()">Save Script</button>
+      </div>
+
+      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Saved Scripts</h3>
+      <button class="btn btn-info" onclick="loadSavedScripts()" style="margin-bottom: 10px;">Refresh List</button>
+      <div id="savedScriptsList" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">No saved scripts. Click "Refresh List" to load.</p>
+      </div>
     </div>
 
     <div class="card">
@@ -922,16 +1179,149 @@ STRING Hello World!"></textarea>
       });
     }
 
+    // Script Management Functions
+    function saveScript() {
+      const script = document.getElementById('duckyScript').value;
+      const name = document.getElementById('scriptName').value.trim();
+
+      if (!script) {
+        log('Error: Script is empty');
+        return;
+      }
+
+      if (!name) {
+        log('Error: Please enter a script name');
+        return;
+      }
+
+      fetch('/api/scripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(name) + '&script=' + encodeURIComponent(script)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Script saved: ' + name);
+          document.getElementById('scriptName').value = '';
+          loadSavedScripts();
+        } else {
+          log('Error saving script: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function loadSavedScripts() {
+      const listDiv = document.getElementById('savedScriptsList');
+      listDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/scripts')
+        .then(response => response.json())
+        .then(scripts => {
+          if (scripts.length === 0) {
+            listDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No saved scripts.</p>';
+            return;
+          }
+
+          listDiv.innerHTML = '';
+          scripts.forEach(script => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = script.name;
+            nameSpan.style.fontWeight = '600';
+
+            const buttonGroup = document.createElement('div');
+            buttonGroup.style.cssText = 'display: flex; gap: 5px;';
+
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'btn btn-primary';
+            loadBtn.textContent = 'Load';
+            loadBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            loadBtn.onclick = function() { loadScriptToEditor(script.name); };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            deleteBtn.onclick = function() { deleteSavedScript(script.name); };
+
+            buttonGroup.appendChild(loadBtn);
+            buttonGroup.appendChild(deleteBtn);
+
+            item.appendChild(nameSpan);
+            item.appendChild(buttonGroup);
+            listDiv.appendChild(item);
+          });
+        })
+        .catch(error => {
+          listDiv.innerHTML = '<p style="color: #ef4444;">Error loading scripts: ' + error + '</p>';
+        });
+    }
+
+    function loadScriptToEditor(name) {
+      fetch('/api/scripts/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(name)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          document.getElementById('duckyScript').value = data.script.replace(/\\n/g, '\n');
+          document.getElementById('scriptName').value = data.name;
+          log('Script loaded: ' + data.name);
+        } else {
+          log('Error loading script: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function deleteSavedScript(name) {
+      if (!confirm('Are you sure you want to delete this script?')) {
+        return;
+      }
+
+      fetch('/api/scripts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(name)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Script deleted');
+          loadSavedScripts();
+        } else {
+          log('Error deleting script: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
     // Update Quick Actions when OS selection changes
     document.getElementById('osSelect').addEventListener('change', updateQuickActions);
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
     updateQuickActions();
+    loadSavedScripts();
   </script>
 </body>
 </html>
 )=====";
+
+String getMainHTML() {
+  return String(FPSTR(MAIN_HTML));
 }
 
 String getSetupHTML() {
