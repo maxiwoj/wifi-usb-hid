@@ -195,11 +195,9 @@ void setupWebServer() {
 }
 
 void serveStaticFile(String path, String contentType) {
-  Serial.println("Serving static file...");
   if (littlefsAvailable) {
     File file = LittleFS.open(path, "r");
     if (file) {
-      Serial.println("serving file " + path);
       server.streamFile(file, contentType);
       file.close();
       return;
@@ -226,8 +224,7 @@ void handleJS() {
 }
 
 void handleCommand() {
-  Serial.println("Handling command...");
-  if (server.hasArg("cmd")) { 
+  if (server.hasArg("cmd")) {
     String cmd = server.arg("cmd");
     sendCommandToProMicro(cmd);
     server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
@@ -237,7 +234,6 @@ void handleCommand() {
 }
 
 void handleScript() {
-  Serial.println("Handling script...");
   if (server.hasArg("script")) {
     String script = server.arg("script");
     executeDuckyScript(script);
@@ -248,7 +244,6 @@ void handleScript() {
 }
 
 void handleJiggler() {
-  Serial.println("Handling jiggler...");
   if (server.hasArg("enable")) {
     String enable = server.arg("enable");
     if (enable == "1") {
@@ -264,7 +259,6 @@ void handleJiggler() {
 }
 
 void handleStatus() {
-  Serial.println("Handling status...");
   String json = "{";
   json += "\"wifi_mode\":\"" + String(isAPMode ? "AP" : "Station") + "\",";
   json += "\"ssid\":\"" + (isAPMode ? String(AP_SSID) : currentSSID) + "\",";
@@ -275,7 +269,6 @@ void handleStatus() {
 }
 
 void handleGetWiFi() {
-  Serial.println("Handling get WiFi...");
   String json = "{";
   json += "\"ssid\":\"" + currentSSID + "\",";
   json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\"";
@@ -284,7 +277,6 @@ void handleGetWiFi() {
 }
 
 void handleSetWiFi() {
-  Serial.println("Handling set WiFi...");
   if (server.hasArg("ssid") && server.hasArg("password")) {
     String ssid = server.arg("ssid");
     String password = server.arg("password");
@@ -302,7 +294,6 @@ void handleSetWiFi() {
 }
 
 void handleScan() {
-  Serial.println("Handling scan...");
   int n = WiFi.scanNetworks();
   String json = "[";
 
@@ -411,7 +402,6 @@ String getScriptNameFromFilename(String filename) {
 
 // Script API Handlers
 void handleListScripts() {
-  Serial.println("Handling list scripts...");
   String json = "[";
   bool first = true;
 
@@ -440,7 +430,6 @@ void handleListScripts() {
 }
 
 void handleSaveScript() {
-  Serial.println("Handling save script...");
   if (server.hasArg("name") && server.hasArg("script")) {
     String name = server.arg("name");
     String script = server.arg("script");
@@ -466,7 +455,6 @@ void handleSaveScript() {
 }
 
 void handleLoadScript() {
-  Serial.println("Handling load script...");
   if (server.hasArg("name")) {
     String name = server.arg("name");
     String script = loadScriptFromFile(name);
@@ -489,7 +477,6 @@ void handleLoadScript() {
 }
 
 void handleDeleteScript() {
-  Serial.println("Handling delete script...");
   if (server.hasArg("name")) {
     String name = server.arg("name");
 
@@ -526,7 +513,7 @@ String escapeJson(String str) {
 
 // Communication with Pro Micro
 void sendCommandToProMicro(String cmd) {
-  Serial.println("Sending command to Pro Micro...");
+  Serial.print("Sending command to Pro Micro: ");
   Serial.println(cmd);
   Serial.flush();
 }
@@ -562,7 +549,6 @@ void executeDuckyScript(String script) {
 }
 
 void parseDuckyLine(String line) {
-  Serial.println("Parsing Ducky Script line...");
   line.trim();
 
   if (line.startsWith("DELAY ")) {
