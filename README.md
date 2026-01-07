@@ -10,13 +10,32 @@ Control a computer's keyboard and mouse remotely using Pro Micro (ATmega32U4) as
 
 ## Features
 
-- Remote keyboard & mouse control with live trackpad
-- Mouse jiggler to prevent screen lock
-- DuckyScript support for automation
-- Web interface with activity logging
-- REST API for programmatic control
-- WiFi manager with auto-reconnect
-- Optional OLED display (128x64)
+### Type Text
+![Type Text Feature](docs/resource/typeText.png)
+
+Type text remotely and send keyboard shortcuts to the target computer.
+
+### Mouse Control with Live Trackpad
+![Mouse Control](docs/resource/mouseControl.png)
+
+Control mouse movement with directional buttons or use the live trackpad with adjustable sensitivity (0.5x - 10x) for smooth, intuitive control on desktop and mobile devices.
+
+### Quick Scripts
+![Quick Scripts](docs/resource/QuickScripts.png)
+
+OS-specific quick scripts for common tasks on Windows, macOS, and Linux. Full DuckyScript support for automation.
+
+### Activity Log
+![Activity Log](docs/resource/ActivityLog.png)
+
+Real-time activity logging shows all commands and actions with timestamps.
+
+### Additional Features
+
+- **Mouse Jiggler** - Automatic movement to prevent screen lock
+- **REST API** - Programmatic control via HTTP endpoints
+- **WiFi Manager** - Auto-reconnect with AP mode fallback
+- **Optional OLED Display** - 128x64 display shows status and IP address
 
 ## Hardware
 
