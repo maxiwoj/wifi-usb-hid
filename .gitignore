@@ -36,6 +36,10 @@ credentials.h
 secrets.h
 wifi_config.h
 
+# SSL certificates (raw PEM/DER files - certs.h is generated and committed)
+nodemcu/server_*.pem
+nodemcu/server_*.der
+
 # Log files
 *.log
 

@@ -39,9 +39,6 @@ void setup() {
 
   setupWebServer();
 
-  server.begin();
-  Serial.println("Web server started");
-
   if (isAPMode) {
     Serial.println("AP Mode - IP: 192.168.4.1");
   } else {
@@ -52,5 +49,5 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();
+  handleWebClients();
 }
