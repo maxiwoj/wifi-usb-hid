@@ -23,6 +23,14 @@ void serveStaticFile(String path, String contentType) {
   server.send(404, "text/plain", "File not found");
 }
 
+bool checkAuthentication() {
+  if (!server.authenticate(WEB_AUTH_USER, WEB_AUTH_PASS)) {
+    server.requestAuthentication();
+    return false;
+  }
+  return true;
+}
+
 void setupWebServer() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/setup", HTTP_GET, handleSetup);
@@ -42,22 +50,27 @@ void setupWebServer() {
 }
 
 void handleRoot() {
+  if (!checkAuthentication()) return;
   serveStaticFile("/index.html", "text/html");
 }
 
 void handleSetup() {
+  if (!checkAuthentication()) return;
   serveStaticFile("/setup.html", "text/html");
 }
 
 void handleCSS() {
+  if (!checkAuthentication()) return;
   serveStaticFile("/style.css", "text/css");
 }
 
 void handleJS() {
+  if (!checkAuthentication()) return;
   serveStaticFile("/script.js", "application/javascript");
 }
 
 void handleCommand() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("cmd")) {
     String cmd = server.arg("cmd");
     sendCommandToProMicro(cmd);
@@ -68,6 +81,7 @@ void handleCommand() {
 }
 
 void handleScript() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("script")) {
     String script = server.arg("script");
     executeDuckyScript(script);
@@ -79,6 +93,7 @@ void handleScript() {
 }
 
 void handleJiggler() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("enable")) {
     String enable = server.arg("enable");
     if (enable == "1") {
@@ -96,6 +111,7 @@ void handleJiggler() {
 }
 
 void handleStatus() {
+  if (!checkAuthentication()) return;
   String json = "{";
   json += "\"wifi_mode\":\"" + String(isAPMode ? "AP" : "Station") + "\",";
   json += "\"ssid\":\"" + (isAPMode ? String(AP_SSID) : currentSSID) + "\",";
@@ -106,6 +122,7 @@ void handleStatus() {
 }
 
 void handleGetWiFi() {
+  if (!checkAuthentication()) return;
   String json = "{";
   json += "\"ssid\":\"" + currentSSID + "\",";
   json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\"";
@@ -114,6 +131,7 @@ void handleGetWiFi() {
 }
 
 void handleSetWiFi() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("ssid") && server.hasArg("password")) {
     String ssid = server.arg("ssid");
     String password = server.arg("password");
@@ -132,6 +150,7 @@ void handleSetWiFi() {
 }
 
 void handleScan() {
+  if (!checkAuthentication()) return;
   int n = WiFi.scanNetworks();
   String json = "[";
 
@@ -150,6 +169,7 @@ void handleScan() {
 
 // Script API Handlers
 void handleListScripts() {
+  if (!checkAuthentication()) return;
   String json = "[";
   bool first = true;
 
@@ -178,6 +198,7 @@ void handleListScripts() {
 }
 
 void handleSaveScript() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("name") && server.hasArg("script")) {
     String name = server.arg("name");
     String script = server.arg("script");
@@ -204,6 +225,7 @@ void handleSaveScript() {
 }
 
 void handleLoadScript() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("name")) {
     String name = server.arg("name");
     String script = loadScriptFromFile(name);
@@ -228,6 +250,7 @@ void handleLoadScript() {
 }
 
 void handleDeleteScript() {
+  if (!checkAuthentication()) return;
   if (server.hasArg("name")) {
     String name = server.arg("name");
 

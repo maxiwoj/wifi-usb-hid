@@ -13,6 +13,10 @@
 #define AP_SSID "USB-HID-Setup"
 #define AP_PASS "HID_M4ster"
 
+// Web Authentication settings
+#define WEB_AUTH_USER "admin"
+#define WEB_AUTH_PASS "HID_Admin2024!"
+
 // WiFi connection timeout
 #define WIFI_TIMEOUT 10000
 
