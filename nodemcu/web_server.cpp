@@ -33,8 +33,8 @@ bool httpsEnabled = false;
     } \
   } while(0)
 
-#define SERVER_HAS_ARG(arg) (httpsEnabled && secureServer.client() ? secureServer.hasArg(arg) : server.hasArg(arg))
-#define SERVER_ARG(arg) (httpsEnabled && secureServer.client() ? secureServer.arg(arg) : server.arg(arg))
+#define SERVER_HAS_ARG(argname) (httpsEnabled && secureServer.client() ? secureServer.hasArg(argname) : server.hasArg(argname))
+#define SERVER_ARG(argname) (httpsEnabled && secureServer.client() ? secureServer.arg(argname) : server.arg(argname))
 #define SERVER_STREAM_FILE(file, type) \
   do { \
     if (httpsEnabled && secureServer.client()) { \
@@ -54,8 +54,8 @@ bool httpsEnabled = false;
   } while(0)
 #else
 #define SERVER_SEND(code, type, content) server.send(code, type, content)
-#define SERVER_HAS_ARG(arg) server.hasArg(arg)
-#define SERVER_ARG(arg) server.arg(arg)
+#define SERVER_HAS_ARG(argname) server.hasArg(argname)
+#define SERVER_ARG(argname) server.arg(argname)
 #define SERVER_STREAM_FILE(file, type) server.streamFile(file, type)
 #define SERVER_AUTHENTICATE(user, pass) server.authenticate(user, pass)
 #define SERVER_REQUEST_AUTH() server.requestAuthentication()
@@ -111,7 +111,6 @@ void setupWebServer() {
   static BearSSL::PrivateKey serverKey(server_key, server_key_len);
 
   secureServer.getServer().setRSACert(&serverCert, &serverKey);
-  secureServer.getServer().setCache(&secureServer.getServerCache());
 
   // Register same routes on HTTPS server
   secureServer.on("/", HTTP_GET, handleRoot);
