@@ -30,11 +30,15 @@ OS-specific quick scripts for common tasks on Windows, macOS, and Linux. Full Du
 
 Real-time activity logging shows all commands and actions with timestamps.
 
+### WiFi Management
+![WiFi Configuration](docs/resource/wifiConfiguration.png)
+
+Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to your home/office network. Auto-reconnects on startup with automatic fallback to AP mode if connection fails.
+
 ### Additional Features
 
 - **Mouse Jiggler** - Automatic movement to prevent screen lock
 - **REST API** - Programmatic control via HTTP endpoints
-- **WiFi Manager** - Auto-reconnect with AP mode fallback
 - **Optional OLED Display** - 128x64 display shows status and IP address
 
 ## Hardware
@@ -49,7 +53,8 @@ Real-time activity logging shows all commands and actions with timestamps.
 - 128x64 I2C OLED display - Connect to D3 (SDA) and D4 (SCL) on NodeMCU
 - Breadboard for easier connections
 
-![Connected Hardware](docs/resource/connected_picture.jpeg)
+![Connected Hardware with Display](docs/resource/display_connected_pic.jpeg)
+*NodeMCU and Pro Micro with optional OLED display*
 
 ## Software
 
