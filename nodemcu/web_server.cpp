@@ -21,38 +21,61 @@ ESP8266WebServerSecure secureServer(443);
 bool httpsEnabled = false;
 #endif
 
-// Helper to get the current server (HTTP or HTTPS)
+// Macro to handle both HTTP and HTTPS server responses
 #if ENABLE_HTTPS
-ESP8266WebServer* getCurrentServer() {
-  // Check if request is from HTTPS server
-  if (httpsEnabled && secureServer.client()) {
-    return &secureServer;
-  }
-  return &server;
-}
+#define GET_ACTIVE_SERVER() (httpsEnabled && secureServer.client() ? secureServer : server)
+#define SERVER_SEND(code, type, content) \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.send(code, type, content); \
+    } else { \
+      server.send(code, type, content); \
+    } \
+  } while(0)
+
+#define SERVER_HAS_ARG(arg) (httpsEnabled && secureServer.client() ? secureServer.hasArg(arg) : server.hasArg(arg))
+#define SERVER_ARG(arg) (httpsEnabled && secureServer.client() ? secureServer.arg(arg) : server.arg(arg))
+#define SERVER_STREAM_FILE(file, type) \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.streamFile(file, type); \
+    } else { \
+      server.streamFile(file, type); \
+    } \
+  } while(0)
+#define SERVER_AUTHENTICATE(user, pass) (httpsEnabled && secureServer.client() ? secureServer.authenticate(user, pass) : server.authenticate(user, pass))
+#define SERVER_REQUEST_AUTH() \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.requestAuthentication(); \
+    } else { \
+      server.requestAuthentication(); \
+    } \
+  } while(0)
 #else
-ESP8266WebServer* getCurrentServer() {
-  return &server;
-}
+#define SERVER_SEND(code, type, content) server.send(code, type, content)
+#define SERVER_HAS_ARG(arg) server.hasArg(arg)
+#define SERVER_ARG(arg) server.arg(arg)
+#define SERVER_STREAM_FILE(file, type) server.streamFile(file, type)
+#define SERVER_AUTHENTICATE(user, pass) server.authenticate(user, pass)
+#define SERVER_REQUEST_AUTH() server.requestAuthentication()
 #endif
 
 void serveStaticFile(String path, String contentType) {
-  ESP8266WebServer* activeServer = getCurrentServer();
   if (littlefsAvailable) {
     File file = LittleFS.open(path, "r");
     if (file) {
-      activeServer->streamFile(file, contentType);
+      SERVER_STREAM_FILE(file, contentType);
       file.close();
       return;
     }
   }
-  activeServer->send(404, "text/plain", "File not found");
+  SERVER_SEND(404, "text/plain", "File not found");
 }
 
 bool checkAuthentication() {
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (!activeServer->authenticate(WEB_AUTH_USER, WEB_AUTH_PASS)) {
-    activeServer->requestAuthentication();
+  if (!SERVER_AUTHENTICATE(WEB_AUTH_USER, WEB_AUTH_PASS)) {
+    SERVER_REQUEST_AUTH();
     return false;
   }
   return true;
@@ -83,8 +106,12 @@ void setupWebServer() {
   // Try to initialize HTTPS server
   Serial.println("Initializing HTTPS server...");
 
-  // Set up the certificate and private key
-  secureServer.getServer().setRSACert(server_cert, server_cert_len, server_key, server_key_len);
+  // Set up the certificate and private key using BearSSL
+  static BearSSL::X509List serverCert(server_cert, server_cert_len);
+  static BearSSL::PrivateKey serverKey(server_key, server_key_len);
+
+  secureServer.getServer().setRSACert(&serverCert, &serverKey);
+  secureServer.getServer().setCache(&secureServer.getServerCache());
 
   // Register same routes on HTTPS server
   secureServer.on("/", HTTP_GET, handleRoot);
@@ -145,93 +172,86 @@ void handleJS() {
 
 void handleCommand() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("cmd")) {
-    String cmd = activeServer->arg("cmd");
+  if (SERVER_HAS_ARG("cmd")) {
+    String cmd = SERVER_ARG("cmd");
     sendCommandToProMicro(cmd);
-    activeServer->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
-    activeServer->send(400, "application/json", "{status:error,message:Missing cmd parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing cmd parameter}");
   }
 }
 
 void handleScript() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("script")) {
-    String script = activeServer->arg("script");
+  if (SERVER_HAS_ARG("script")) {
+    String script = SERVER_ARG("script");
     executeDuckyScript(script);
     displayAction("Script executed");
-    activeServer->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script executed\"}");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script executed\"}");
   } else {
-    activeServer->send(400, "application/json", "{status:error,message:Missing script parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing script parameter}");
   }
 }
 
 void handleJiggler() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("enable")) {
-    String enable = activeServer->arg("enable");
+  if (SERVER_HAS_ARG("enable")) {
+    String enable = SERVER_ARG("enable");
     if (enable == "1") {
       sendCommandToProMicro("JIGGLE_ON");
       displayAction("Jiggler ON");
-      activeServer->send(200, "application/json", "{\"status\":\"ok\",\"enabled\":true}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":true}");
     } else {
       sendCommandToProMicro("JIGGLE_OFF");
       displayAction("Jiggler OFF");
-      activeServer->send(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
     }
   } else {
-    activeServer->send(400, "application/json", "{status:error,message:Missing enable parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing enable parameter}");
   }
 }
 
 void handleStatus() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
   String json = "{";
   json += "\"wifi_mode\":\"" + String(isAPMode ? "AP" : "Station") + "\",";
   json += "\"ssid\":\"" + (isAPMode ? String(AP_SSID) : currentSSID) + "\",";
   json += "\"ip\":\"" + (isAPMode ? "192.168.4.1" : WiFi.localIP().toString()) + "\",";
   json += "\"connected\":" + String(WiFi.status() == WL_CONNECTED ? "true" : "false");
   json += "}";
-  activeServer->send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleGetWiFi() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
   String json = "{";
   json += "\"ssid\":\"" + currentSSID + "\",";
   json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\"";
   json += "}";
-  activeServer->send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleSetWiFi() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("ssid") && activeServer->hasArg("password")) {
-    String ssid = activeServer->arg("ssid");
-    String password = activeServer->arg("password");
+  if (SERVER_HAS_ARG("ssid") && SERVER_HAS_ARG("password")) {
+    String ssid = SERVER_ARG("ssid");
+    String password = SERVER_ARG("password");
 
     saveWiFiCredentials(ssid, password);
     displayAction("WiFi saved");
 
     String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved. Restarting...\"}";
-    activeServer->send(200, "application/json", json);
+    SERVER_SEND(200, "application/json", json);
 
     delay(1000);
     ESP.restart();
   } else {
-    activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
   }
 }
 
 void handleScan() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
   int n = WiFi.scanNetworks();
   String json = "[";
 
@@ -245,13 +265,12 @@ void handleScan() {
   }
 
   json += "]";
-  activeServer->send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 // Script API Handlers
 void handleListScripts() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
   String json = "[";
   bool first = true;
 
@@ -276,46 +295,44 @@ void handleListScripts() {
   }
 
   json += "]";
-  activeServer->send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleSaveScript() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("name") && activeServer->hasArg("script")) {
-    String name = activeServer->arg("name");
-    String script = activeServer->arg("script");
+  if (SERVER_HAS_ARG("name") && SERVER_HAS_ARG("script")) {
+    String name = SERVER_ARG("name");
+    String script = SERVER_ARG("script");
 
     if (name.length() == 0) {
-      activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name cannot be empty\"}");
+      SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name cannot be empty\"}");
       return;
     }
 
     if (name.length() > MAX_SCRIPT_NAME_LEN) {
-      activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name too long\"}");
+      SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name too long\"}");
       return;
     }
 
     if (saveScriptToFile(name, script)) {
       displayAction("Saved: " + name);
-      activeServer->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script saved\"}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script saved\"}");
     } else {
-      activeServer->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save script\"}");
+      SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save script\"}");
     }
   } else {
-    activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name or script parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name or script parameter\"}");
   }
 }
 
 void handleLoadScript() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("name")) {
-    String name = activeServer->arg("name");
+  if (SERVER_HAS_ARG("name")) {
+    String name = SERVER_ARG("name");
     String script = loadScriptFromFile(name);
 
     if (script.length() == 0) {
-      activeServer->send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+      SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
       return;
     }
 
@@ -327,25 +344,24 @@ void handleLoadScript() {
     json += "\"script\":\"" + escapeJson(script) + "\"";
     json += "}";
 
-    activeServer->send(200, "application/json", json);
+    SERVER_SEND(200, "application/json", json);
   } else {
-    activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
   }
 }
 
 void handleDeleteScript() {
   if (!checkAuthentication()) return;
-  ESP8266WebServer* activeServer = getCurrentServer();
-  if (activeServer->hasArg("name")) {
-    String name = activeServer->arg("name");
+  if (SERVER_HAS_ARG("name")) {
+    String name = SERVER_ARG("name");
 
     if (deleteScriptFile(name)) {
       displayAction("Deleted: " + name);
-      activeServer->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script deleted\"}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script deleted\"}");
     } else {
-      activeServer->send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+      SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
     }
   } else {
-    activeServer->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
   }
 }
