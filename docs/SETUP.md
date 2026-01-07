@@ -56,7 +56,7 @@ See [WIRING.md](WIRING.md) for detailed wiring diagrams.
 ## 5. First Use
 
 ### Access Web Interface
-1. Connect to WiFi network **"USB-HID-Setup"** (password: **12345678**)
+1. Connect to WiFi network **"USB-HID-Setup"** (password: **HID_M4ster**)
 2. Open browser and go to **http://192.168.4.1**
 3. You should see the control interface
 
@@ -99,4 +99,4 @@ All features work in both AP mode (192.168.4.1) and Station mode (your network I
 
 **Pro Micro:** Board = Arduino Leonardo, Baud = 115200
 **NodeMCU:** Board = NodeMCU 1.0, Upload = 115200, Flash = 4MB (FS:2MB)
-**Default AP:** SSID = USB-HID-Setup, Password = 12345678, IP = 192.168.4.1
+**Default AP:** SSID = USB-HID-Setup, Password = HID_M4ster, IP = 192.168.4.1

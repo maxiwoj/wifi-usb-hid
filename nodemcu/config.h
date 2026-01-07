@@ -11,7 +11,7 @@
 
 // WiFi AP settings
 #define AP_SSID "USB-HID-Setup"
-#define AP_PASS "12345678"
+#define AP_PASS "HID_M4ster"
 
 // WiFi connection timeout
 #define WIFI_TIMEOUT 10000
