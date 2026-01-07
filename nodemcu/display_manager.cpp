@@ -152,19 +152,25 @@ void updateDisplayStatus() {
   // WiFi Status
   if (isAPMode) {
     display.println("Mode: Access Point");
-    display.println();
-    display.print("SSID: ");
+    display.print("WiFi: ");
     display.println(AP_SSID);
     display.print("Pass: ");
     display.println(AP_PASS);
     display.print("IP: 192.168.4.1");
   } else {
     display.println("Mode: Station");
-    display.print("Network: ");
+    display.print("Net: ");
     display.println(currentSSID);
     display.print("IP: ");
     display.println(WiFi.localIP().toString());
   }
+
+  // Web Authentication
+  display.println();
+  display.print("Web: ");
+  display.print(WEB_AUTH_USER);
+  display.print("/");
+  display.println(WEB_AUTH_PASS);
 
   // Last action (if any)
   if (lastAction.length() > 0) {
