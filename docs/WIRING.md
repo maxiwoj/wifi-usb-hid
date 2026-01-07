@@ -6,6 +6,8 @@ Connect NodeMCU (ESP8266) and Pro Micro (ATmega32U4) via serial communication. N
 
 ## Connection Table
 
+### Core Connections (Required)
+
 | NodeMCU Pin | Pro Micro Pin | Wire Color    | Description       |
 |-------------|---------------|---------------|-------------------|
 | Vin         | VCC           | Red           | Power (5V)        |
@@ -15,8 +17,20 @@ Connect NodeMCU (ESP8266) and Pro Micro (ATmega32U4) via serial communication. N
 
 **Important:** TX/RX must be crossed (not straight-through)!
 
+### Optional Display Connections
+
+| Display Pin | NodeMCU Pin   | Wire Color    | Description       |
+|-------------|---------------|---------------|-------------------|
+| VCC         | 3.3V          | Red           | Power (3.3V)      |
+| GND         | GND           | Black         | Common ground     |
+| SDA         | D3 (GPIO4)    | Blue/Green    | I2C data          |
+| SCL         | D4 (GPIO5)    | Yellow/White  | I2C clock         |
+
+**Don't use D0** - GPIO16 doesn't support I2C!
+
 ## Wiring Diagram
 
+### Core Connections
 ```
 Pro Micro          Wire Color        NodeMCU
 ─────────          ──────────        ───────
@@ -31,7 +45,19 @@ RX (Pin 0)    <────[YELLOW]───────── TX
 (Power + HID)
 ```
 
+### Optional Display Connections
+```
+NodeMCU           Wire Color        OLED Display
+───────           ──────────        ────────────
+3.3V          ───────[RED]─────────> VCC
+GND           ──────[BLACK]─────────> GND
+D3 (GPIO4)    ─────[BLUE/GREEN]────> SDA (I2C Data)
+D4 (GPIO5)    ────[YELLOW/WHITE]───> SCL (I2C Clock)
+```
+
 ## Step-by-Step Instructions
+
+### Core Setup (Required)
 
 1. **Disconnect both devices from USB**
 2. **Connect 4 wires:**
@@ -42,15 +68,15 @@ RX (Pin 0)    <────[YELLOW]───────── TX
 3. **Double-check connections** - especially that TX/RX are crossed
 4. **Connect Pro Micro to computer via USB** - powers both devices
 
-## Optional: OLED Display
+### Optional: OLED Display Setup
 
-If using a 128x64 I2C OLED display:
-- Display **VCC** → NodeMCU **3.3V**
-- Display **GND** → NodeMCU **GND**
-- Display **SDA** → NodeMCU **D3** (GPIO4)
-- Display **SCL** → NodeMCU **D4** (GPIO5)
+If using a 128x64 I2C OLED display, connect 4 additional wires:
+- Red wire: NodeMCU **3.3V** → Display **VCC**
+- Black wire: NodeMCU **GND** → Display **GND**
+- Blue/Green wire: NodeMCU **D3 (GPIO4)** → Display **SDA**
+- Yellow/White wire: NodeMCU **D4 (GPIO5)** → Display **SCL**
 
-**Don't use D0** - GPIO16 doesn't support I2C!
+**Important:** Use **3.3V** (not Vin/5V) to power the display!
 
 ## Power Notes
 

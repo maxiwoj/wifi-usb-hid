@@ -18,7 +18,7 @@ Type text remotely and send keyboard shortcuts to the target computer.
 ### Mouse Control with Live Trackpad
 ![Mouse Control](docs/resource/mouseControl.png)
 
-Control mouse movement with directional buttons or use the live trackpad with adjustable sensitivity (0.5x - 10x) for smooth, intuitive control on desktop and mobile devices.
+Control mouse movement with directional buttons or use the live trackpad with adjustable sensitivity (0.5x - 10x) for smooth, intuitive control on desktop and mobile devices. Supports single-click, double-click gestures for highlighting text, and right-click for context menus.
 
 ### Quick Scripts
 ![Quick Scripts](docs/resource/QuickScripts.png)
@@ -37,6 +37,7 @@ Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB
 
 ### Additional Features
 
+- **Script Storage** - Save and load DuckyScripts to/from LittleFS for reuse
 - **Mouse Jiggler** - Automatic movement to prevent screen lock
 - **REST API** - Programmatic control via HTTP endpoints
 - **Optional OLED Display** - 128x64 display shows status and IP address

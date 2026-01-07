@@ -171,21 +171,9 @@ ENTER
 - Test scripts on similar systems first
 - Avoid hardcoding passwords
 
-## Python Example
+## Script Storage
 
-```python
-import requests
-
-# Type text
-requests.post("http://192.168.1.100/api/command", data={"cmd": "TYPE:Hello"})
-
-# Execute script
-script = "GUI r\nDELAY 500\nSTRING notepad\nENTER"
-requests.post("http://192.168.1.100/api/script", data={"script": script})
-
-# Control jiggler
-requests.get("http://192.168.1.100/api/jiggler?enable=1")
-```
+DuckyScripts can be saved to and loaded from LittleFS for reuse. Scripts are stored as files in the `/scripts_<name>.txt` format on the NodeMCU filesystem.
 
 ## Notes
 
