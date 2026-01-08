@@ -41,7 +41,7 @@ Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB
 - **Script Storage** - Save and load DuckyScripts to/from LittleFS for reuse
 - **Mouse Jiggler** - Automatic movement to prevent screen lock
 - **REST API** - Programmatic control via HTTP endpoints
-- **Optional OLED Display** - 128x64 display shows status and IP address
+- **Optional OLED Display** - 128x64 display shows status, IP address, and web credentials
 
 ## Hardware
 
