@@ -38,9 +38,10 @@ Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB
 ### Additional Features
 
 - **Web Authentication** - HTTP Basic Authentication protects all endpoints (default: admin/HID_Admin2024!)
+- **HTTPS Support** - Secure communication with self-signed certificate (HTTP + HTTPS on ports 80 and 443)
 - **Script Storage** - Save and load DuckyScripts to/from LittleFS for reuse
 - **Mouse Jiggler** - Automatic movement to prevent screen lock
-- **REST API** - Programmatic control via HTTP endpoints
+- **REST API** - Programmatic control via HTTP/HTTPS endpoints
 - **Optional OLED Display** - 128x64 display shows status, IP address, and web credentials
 
 ## Hardware
@@ -71,8 +72,9 @@ Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB
 2. **Upload** - Flash `pro-micro/pro-micro.ino` (Leonardo board) and `nodemcu/nodemcu.ino` (NodeMCU 1.0)
 3. **Upload web files** - Use LittleFS upload tool for `nodemcu/data/` folder
 4. **Connect** - Plug Pro Micro into computer via USB (powers both devices)
-5. **Access** - Connect to WiFi "USB-HID-Setup" (password: HID_M4ster), open http://192.168.4.1
+5. **Access** - Connect to WiFi "USB-HID-Setup" (password: HID_M4ster), open http://192.168.4.1 or https://192.168.4.1
 6. **Login** - Enter web credentials (username: admin, password: HID_Admin2024!)
+7. **HTTPS Note** - For HTTPS, accept the browser security warning for the self-signed certificate
 
 See **[SETUP.md](docs/SETUP.md)** for detailed instructions and **[WIRING.md](docs/WIRING.md)** for connection diagrams.
 

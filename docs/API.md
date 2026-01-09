@@ -12,9 +12,22 @@ All API endpoints and web pages require HTTP Basic Authentication.
 
 You can change these credentials in `nodemcu/config.h` (WEB_AUTH_USER and WEB_AUTH_PASS).
 
+## HTTPS Support
+
+The device supports both HTTP and HTTPS for secure communication:
+
+- **HTTP**: Port 80 (default, always available)
+- **HTTPS**: Port 443 (enabled by default, uses ~15-20KB RAM)
+
+To disable HTTPS and save memory, set `ENABLE_HTTPS 0` in `nodemcu/config.h`.
+
+**HTTPS Certificate:** Self-signed certificate (valid 10 years). Browsers will show a security warning - this is expected. You can regenerate the certificate by running `./generate_cert.sh` in the `nodemcu/` directory.
+
 ## REST API Endpoints
 
-Base URL: `http://<device-ip>` or `http://192.168.4.1` (AP mode)
+Base URL:
+- HTTP: `http://<device-ip>` or `http://192.168.4.1` (AP mode)
+- HTTPS: `https://<device-ip>` or `https://192.168.4.1` (AP mode)
 
 ### Web Interface
 

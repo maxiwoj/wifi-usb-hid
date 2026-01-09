@@ -9,29 +9,80 @@
 #include "utils.h"
 #include "config.h"
 
+#if ENABLE_HTTPS
+#include <ESP8266WebServerSecure.h>
+#include "certs.h"
+#endif
+
 ESP8266WebServer server(80);
+
+#if ENABLE_HTTPS
+ESP8266WebServerSecure secureServer(443);
+bool httpsEnabled = false;
+#endif
+
+// Macro to handle both HTTP and HTTPS server responses
+#if ENABLE_HTTPS
+#define GET_ACTIVE_SERVER() (httpsEnabled && secureServer.client() ? secureServer : server)
+#define SERVER_SEND(code, type, content) \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.send(code, type, content); \
+    } else { \
+      server.send(code, type, content); \
+    } \
+  } while(0)
+
+#define SERVER_HAS_ARG(argname) (httpsEnabled && secureServer.client() ? secureServer.hasArg(argname) : server.hasArg(argname))
+#define SERVER_ARG(argname) (httpsEnabled && secureServer.client() ? secureServer.arg(argname) : server.arg(argname))
+#define SERVER_STREAM_FILE(file, type) \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.streamFile(file, type); \
+    } else { \
+      server.streamFile(file, type); \
+    } \
+  } while(0)
+#define SERVER_AUTHENTICATE(user, pass) (httpsEnabled && secureServer.client() ? secureServer.authenticate(user, pass) : server.authenticate(user, pass))
+#define SERVER_REQUEST_AUTH() \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.requestAuthentication(); \
+    } else { \
+      server.requestAuthentication(); \
+    } \
+  } while(0)
+#else
+#define SERVER_SEND(code, type, content) server.send(code, type, content)
+#define SERVER_HAS_ARG(argname) server.hasArg(argname)
+#define SERVER_ARG(argname) server.arg(argname)
+#define SERVER_STREAM_FILE(file, type) server.streamFile(file, type)
+#define SERVER_AUTHENTICATE(user, pass) server.authenticate(user, pass)
+#define SERVER_REQUEST_AUTH() server.requestAuthentication()
+#endif
 
 void serveStaticFile(String path, String contentType) {
   if (littlefsAvailable) {
     File file = LittleFS.open(path, "r");
     if (file) {
-      server.streamFile(file, contentType);
+      SERVER_STREAM_FILE(file, contentType);
       file.close();
       return;
     }
   }
-  server.send(404, "text/plain", "File not found");
+  SERVER_SEND(404, "text/plain", "File not found");
 }
 
 bool checkAuthentication() {
-  if (!server.authenticate(WEB_AUTH_USER, WEB_AUTH_PASS)) {
-    server.requestAuthentication();
+  if (!SERVER_AUTHENTICATE(WEB_AUTH_USER, WEB_AUTH_PASS)) {
+    SERVER_REQUEST_AUTH();
     return false;
   }
   return true;
 }
 
 void setupWebServer() {
+  // Register routes on HTTP server
   server.on("/", HTTP_GET, handleRoot);
   server.on("/setup", HTTP_GET, handleSetup);
   server.on("/style.css", HTTP_GET, handleCSS);
@@ -47,6 +98,55 @@ void setupWebServer() {
   server.on("/api/scripts", HTTP_POST, handleSaveScript);
   server.on("/api/scripts/load", HTTP_POST, handleLoadScript);
   server.on("/api/scripts/delete", HTTP_POST, handleDeleteScript);
+
+  server.begin();
+  Serial.println("HTTP server started on port 80");
+
+#if ENABLE_HTTPS
+  // Try to initialize HTTPS server
+  Serial.println("Initializing HTTPS server...");
+
+  // Set up the certificate and private key using BearSSL
+  static BearSSL::X509List serverCert(server_cert, server_cert_len);
+  static BearSSL::PrivateKey serverKey(server_key, server_key_len);
+
+  secureServer.getServer().setRSACert(&serverCert, &serverKey);
+
+  // Register same routes on HTTPS server
+  secureServer.on("/", HTTP_GET, handleRoot);
+  secureServer.on("/setup", HTTP_GET, handleSetup);
+  secureServer.on("/style.css", HTTP_GET, handleCSS);
+  secureServer.on("/script.js", HTTP_GET, handleJS);
+  secureServer.on("/api/command", HTTP_POST, handleCommand);
+  secureServer.on("/api/script", HTTP_POST, handleScript);
+  secureServer.on("/api/jiggler", HTTP_GET, handleJiggler);
+  secureServer.on("/api/status", HTTP_GET, handleStatus);
+  secureServer.on("/api/wifi", HTTP_GET, handleGetWiFi);
+  secureServer.on("/api/wifi", HTTP_POST, handleSetWiFi);
+  secureServer.on("/api/scan", HTTP_GET, handleScan);
+  secureServer.on("/api/scripts", HTTP_GET, handleListScripts);
+  secureServer.on("/api/scripts", HTTP_POST, handleSaveScript);
+  secureServer.on("/api/scripts/load", HTTP_POST, handleLoadScript);
+  secureServer.on("/api/scripts/delete", HTTP_POST, handleDeleteScript);
+
+  secureServer.begin();
+  httpsEnabled = true;
+  Serial.println("HTTPS server started on port 443");
+  Serial.println("WARNING: HTTPS uses ~15-20KB RAM. Monitor free heap!");
+  Serial.print("Free heap: ");
+  Serial.println(ESP.getFreeHeap());
+#else
+  Serial.println("HTTPS is disabled (set ENABLE_HTTPS=1 in config.h to enable)");
+#endif
+}
+
+void handleWebClients() {
+  server.handleClient();
+#if ENABLE_HTTPS
+  if (httpsEnabled) {
+    secureServer.handleClient();
+  }
+#endif
 }
 
 void handleRoot() {
@@ -71,42 +171,42 @@ void handleJS() {
 
 void handleCommand() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("cmd")) {
-    String cmd = server.arg("cmd");
+  if (SERVER_HAS_ARG("cmd")) {
+    String cmd = SERVER_ARG("cmd");
     sendCommandToProMicro(cmd);
-    server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
-    server.send(400, "application/json", "{status:error,message:Missing cmd parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing cmd parameter}");
   }
 }
 
 void handleScript() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("script")) {
-    String script = server.arg("script");
+  if (SERVER_HAS_ARG("script")) {
+    String script = SERVER_ARG("script");
     executeDuckyScript(script);
     displayAction("Script executed");
-    server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script executed\"}");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script executed\"}");
   } else {
-    server.send(400, "application/json", "{status:error,message:Missing script parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing script parameter}");
   }
 }
 
 void handleJiggler() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("enable")) {
-    String enable = server.arg("enable");
+  if (SERVER_HAS_ARG("enable")) {
+    String enable = SERVER_ARG("enable");
     if (enable == "1") {
       sendCommandToProMicro("JIGGLE_ON");
       displayAction("Jiggler ON");
-      server.send(200, "application/json", "{\"status\":\"ok\",\"enabled\":true}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":true}");
     } else {
       sendCommandToProMicro("JIGGLE_OFF");
       displayAction("Jiggler OFF");
-      server.send(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
     }
   } else {
-    server.send(400, "application/json", "{status:error,message:Missing enable parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing enable parameter}");
   }
 }
 
@@ -118,7 +218,7 @@ void handleStatus() {
   json += "\"ip\":\"" + (isAPMode ? "192.168.4.1" : WiFi.localIP().toString()) + "\",";
   json += "\"connected\":" + String(WiFi.status() == WL_CONNECTED ? "true" : "false");
   json += "}";
-  server.send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleGetWiFi() {
@@ -127,25 +227,25 @@ void handleGetWiFi() {
   json += "\"ssid\":\"" + currentSSID + "\",";
   json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\"";
   json += "}";
-  server.send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleSetWiFi() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("ssid") && server.hasArg("password")) {
-    String ssid = server.arg("ssid");
-    String password = server.arg("password");
+  if (SERVER_HAS_ARG("ssid") && SERVER_HAS_ARG("password")) {
+    String ssid = SERVER_ARG("ssid");
+    String password = SERVER_ARG("password");
 
     saveWiFiCredentials(ssid, password);
     displayAction("WiFi saved");
 
     String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved. Restarting...\"}";
-    server.send(200, "application/json", json);
+    SERVER_SEND(200, "application/json", json);
 
     delay(1000);
     ESP.restart();
   } else {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
   }
 }
 
@@ -164,7 +264,7 @@ void handleScan() {
   }
 
   json += "]";
-  server.send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 // Script API Handlers
@@ -194,44 +294,44 @@ void handleListScripts() {
   }
 
   json += "]";
-  server.send(200, "application/json", json);
+  SERVER_SEND(200, "application/json", json);
 }
 
 void handleSaveScript() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("name") && server.hasArg("script")) {
-    String name = server.arg("name");
-    String script = server.arg("script");
+  if (SERVER_HAS_ARG("name") && SERVER_HAS_ARG("script")) {
+    String name = SERVER_ARG("name");
+    String script = SERVER_ARG("script");
 
     if (name.length() == 0) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name cannot be empty\"}");
+      SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name cannot be empty\"}");
       return;
     }
 
     if (name.length() > MAX_SCRIPT_NAME_LEN) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name too long\"}");
+      SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Script name too long\"}");
       return;
     }
 
     if (saveScriptToFile(name, script)) {
       displayAction("Saved: " + name);
-      server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script saved\"}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script saved\"}");
     } else {
-      server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save script\"}");
+      SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save script\"}");
     }
   } else {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name or script parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name or script parameter\"}");
   }
 }
 
 void handleLoadScript() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("name")) {
-    String name = server.arg("name");
+  if (SERVER_HAS_ARG("name")) {
+    String name = SERVER_ARG("name");
     String script = loadScriptFromFile(name);
 
     if (script.length() == 0) {
-      server.send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+      SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
       return;
     }
 
@@ -243,24 +343,24 @@ void handleLoadScript() {
     json += "\"script\":\"" + escapeJson(script) + "\"";
     json += "}";
 
-    server.send(200, "application/json", json);
+    SERVER_SEND(200, "application/json", json);
   } else {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
   }
 }
 
 void handleDeleteScript() {
   if (!checkAuthentication()) return;
-  if (server.hasArg("name")) {
-    String name = server.arg("name");
+  if (SERVER_HAS_ARG("name")) {
+    String name = SERVER_ARG("name");
 
     if (deleteScriptFile(name)) {
       displayAction("Deleted: " + name);
-      server.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script deleted\"}");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script deleted\"}");
     } else {
-      server.send(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
+      SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Script not found\"}");
     }
   } else {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
   }
 }

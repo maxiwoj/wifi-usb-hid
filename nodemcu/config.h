@@ -17,6 +17,12 @@
 #define WEB_AUTH_USER "admin"
 #define WEB_AUTH_PASS "HID_Admin2024!"
 
+// HTTPS Settings
+// WARNING: HTTPS uses significant memory on ESP8266 (15-20KB RAM)
+// Only enable if you have sufficient free memory
+// Set to 1 to enable HTTPS on port 443, 0 to disable (HTTP only on port 80)
+#define ENABLE_HTTPS 0
+
 // WiFi connection timeout
 #define WIFI_TIMEOUT 10000
 
