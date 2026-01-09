@@ -16,6 +16,32 @@ unsigned long lastActionTime = 0;
 extern bool isAPMode;
 extern String currentSSID;
 
+// Internal function to show startup logo
+void showStartupLogo() {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  // Large title - centered (8 chars * 12px = 96px, (128-96)/2 = 16)
+  display.setTextSize(2);
+  display.setCursor(16, 8);
+  display.println("WiFi HID");
+
+  // Decorative separator - centered (9 chars * 6px = 54px, (128-54)/2 = 37)
+  display.setTextSize(1);
+  display.setCursor(37, 28);
+  display.println("=========");
+
+  // Subtitle - centered (11 chars * 6px = 66px, (128-66)/2 = 31)
+  display.setCursor(31, 42);
+  display.println("USB Control");
+
+  // Status - centered (11 chars * 6px = 66px, (128-66)/2 = 31)
+  display.setCursor(31, 54);
+  display.println("Starting...");
+
+  display.display();
+  delay(1500);
+}
 
 void setupDisplay() {
     // Initialize I2C for OLED display
@@ -61,59 +87,26 @@ void setupDisplay() {
   } else {
     // I2C device found, try to initialize
     if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-      Serial.println("Display library initialized - testing display...");
-
-      // Test if display actually works
-      display.clearDisplay();
-      display.setTextSize(2);
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0, 0);
-      display.println("WiFi USB HID Control");
-      display.setTextSize(1);
-      display.println("If you see this,");
-      display.println("the display works!");
-      display.display();
+      Serial.println("Display library initialized - showing startup logo...");
 
       displayAvailable = true;
       Serial.println("OLED display is working!");
-      delay(2000);
 
-      // Show actual startup message
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0, 0);
-      display.println("WiFi USB HID Control");
-      display.println("Initializing...");
-      display.display();
-      delay(500);
+      // Show formatted startup logo
+      showStartupLogo();
     } else {
       Serial.println("Display initialization failed at 0x3C");
 
       // Try alternative address 0x3D
       Serial.println("Trying alternative address 0x3D...");
       if (display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
-        Serial.println("Display library initialized at 0x3D - testing...");
-
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(SSD1306_WHITE);
-        display.setCursor(0, 0);
-        display.println("TESTING");
-        display.setTextSize(1);
-        display.println("Display @ 0x3D");
-        display.display();
+        Serial.println("Display library initialized at 0x3D - showing startup logo...");
 
         displayAvailable = true;
         Serial.println("OLED display working at 0x3D!");
-        delay(2000);
 
-        display.clearDisplay();
-        display.setTextSize(1);
-        display.setCursor(0, 0);
-        display.println("WiFi HID Control");
-        display.println("Initializing...");
-        display.display();
-        delay(500);
+        // Show formatted startup logo
+        showStartupLogo();
       } else {
         Serial.println("Display not found at 0x3C or 0x3D");
         displayAvailable = false;
@@ -145,39 +138,41 @@ void updateDisplayStatus() {
   display.setCursor(0, 0);
 
   // Title
-  display.setTextSize(1);
   display.println("WiFi HID Control");
   display.println("----------------");
 
-  // WiFi Status
+  // Mode and IP on same line - saves space
   if (isAPMode) {
-    display.println("Mode: Access Point");
-    display.print("WiFi: ");
+    display.println("AP  192.168.4.1");
+    display.print("WiFi:");
     display.println(AP_SSID);
-    display.print("Pass: ");
+    display.print("Pass:");
     display.println(AP_PASS);
-    display.print("IP: 192.168.4.1");
   } else {
-    display.println("Mode: Station");
-    display.print("Net: ");
-    display.println(currentSSID);
-    display.print("IP: ");
+    display.print("ST  ");
     display.println(WiFi.localIP().toString());
+    display.print("Net:");
+    display.println(currentSSID);
+    // Don't show password in station mode to save space
   }
 
-  // Web Authentication
-  display.println();
-  display.print("Web: ");
+  // Web Authentication - no label, just credentials
+  display.print("U:");
   display.print(WEB_AUTH_USER);
+  // Use inverse color for separator to distinguish username/password
+  display.setTextColor(SSD1306_WHITE);
   display.print("/");
+  display.setTextColor(SSD1306_WHITE);
   display.println(WEB_AUTH_PASS);
 
-  // Last action (if any)
+  // Blank line for separation
+  display.println();
+
+  // Last action (if any) - now has dedicated space
   if (lastAction.length() > 0) {
     unsigned long timeSinceAction = millis() - lastActionTime;
     if (timeSinceAction < 3000) { // Show for 3 seconds
-      display.println();
-      display.print("> ");
+      display.print(">");
       display.println(lastAction);
     }
   }
