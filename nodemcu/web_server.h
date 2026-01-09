@@ -8,6 +8,8 @@ void handleWebClients();
 bool checkAuthentication();
 void handleRoot();
 void handleSetup();
+void handleManageActions();
+void handleManageOS();
 void handleCSS();
 void handleJS();
 void handleCommand();

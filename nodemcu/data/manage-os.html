@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Operating Systems - WiFi USB HID</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Manage Operating Systems</h1>
+        <p style="color: #6b7280; margin-top: 5px;">Add custom operating system categories with their own quick actions</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-info" onclick="location.href='/'">Back to Home</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Add Custom Operating System</h2>
+      <div style="display: grid; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">OS Name:</label>
+          <input type="text" id="customOSName" placeholder="e.g., Android, ChromeOS, Raspberry Pi">
+          <p style="font-size: 12px; color: #6b7280; margin: 5px 0 0 0;">
+            Create a custom OS category to organize quick actions for different systems
+          </p>
+        </div>
+        <button class="btn btn-success" onclick="addCustomOSFromInput()">Add Operating System</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Default Operating Systems</h2>
+      <p style="color: #6b7280; margin-bottom: 15px;">Built-in operating systems (cannot be deleted)</p>
+      <div id="defaultOSList" style="display: grid; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+          <span style="font-weight: 600;">Windows</span>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+          <span style="font-weight: 600;">MacOS</span>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+          <span style="font-weight: 600;">Linux</span>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Custom Operating Systems</h2>
+      <div id="customOSList" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">Loading...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initialize the OS management page
+    (function() {
+      log('OS Manager loaded');
+      loadCustomOS();
+    })();
+
+    function addCustomOSFromInput() {
+      const input = document.getElementById('customOSName');
+      const osName = input.value.trim();
+
+      if (!osName) {
+        log('Error: OS name cannot be empty');
+        return;
+      }
+
+      fetch('/api/customos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(osName)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Custom OS added: ' + osName);
+          input.value = '';
+          loadCustomOS();
+        } else {
+          log('Error: ' + (data.message || 'Failed to add custom OS'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function displayCustomOSListOnManagePage(customOSList) {
+      const listDiv = document.getElementById('customOSList');
+      if (!listDiv) return;
+
+      if (customOSList.length === 0) {
+        listDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No custom operating systems. Add one above to get started.</p>';
+        return;
+      }
+
+      listDiv.innerHTML = '';
+      customOSList.forEach(osName => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = osName;
+        nameSpan.style.fontWeight = '600';
+
+        const btnGroup = document.createElement('div');
+        btnGroup.style.cssText = 'display: flex; gap: 10px;';
+
+        const manageBtn = document.createElement('button');
+        manageBtn.className = 'btn btn-primary';
+        manageBtn.textContent = 'Manage Actions';
+        manageBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+        manageBtn.onclick = function() { location.href = 'manage-actions.html'; };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+        deleteBtn.onclick = function() { deleteCustomOS(osName); };
+
+        btnGroup.appendChild(manageBtn);
+        btnGroup.appendChild(deleteBtn);
+
+        item.appendChild(nameSpan);
+        item.appendChild(btnGroup);
+        listDiv.appendChild(item);
+      });
+    }
+  </script>
+</body>
+</html>

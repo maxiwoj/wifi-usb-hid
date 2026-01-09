@@ -25,11 +25,14 @@
 
     <div class="card">
       <h2>OS Selection</h2>
-      <select id="osSelect">
-        <option value="Windows">Windows</option>
-        <option value="MacOS">MacOS</option>
-        <option value="Linux">Linux</option>
-      </select>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <select id="osSelect" style="flex: 1;">
+          <option value="Windows">Windows</option>
+          <option value="MacOS">MacOS</option>
+          <option value="Linux">Linux</option>
+        </select>
+        <button class="btn btn-primary" onclick="location.href='manage-os.html'" style="white-space: nowrap;">Manage OS</button>
+      </div>
     </div>
 
     <div class="card">
@@ -41,7 +44,10 @@
     </div>
 
     <div class="card">
-      <h2>Quick Actions</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Quick Actions</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 8px 16px; font-size: 14px;">Manage Actions</button>
+      </div>
       <div class="button-grid" id="quickActions">
         <!-- Buttons will be dynamically generated based on OS selection -->
       </div>
@@ -122,54 +128,6 @@ STRING Hello World!"></textarea>
       <button class="btn btn-info" onclick="loadSavedScripts()" style="margin-bottom: 10px;">Refresh List</button>
       <div id="savedScriptsList" style="min-height: 50px;">
         <p style="color: #6b7280; font-style: italic;">No saved scripts. Click "Refresh List" to load.</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Manage Quick Actions</h2>
-      <p style="color: #6b7280; margin-bottom: 15px;">Add custom quick action buttons for any operating system</p>
-
-      <div style="margin-bottom: 15px;">
-        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Select OS:</label>
-        <select id="osManagerSelect" onchange="loadQuickActionsManager()">
-          <option value="Windows">Windows</option>
-          <option value="MacOS">MacOS</option>
-          <option value="Linux">Linux</option>
-        </select>
-      </div>
-
-      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Add New Quick Action</h3>
-      <div style="display: grid; gap: 10px;">
-        <input type="text" id="quickActionCmd" placeholder="Command (e.g., GUI_A, CTRL_C)">
-        <input type="text" id="quickActionLabel" placeholder="Button Label (e.g., Select All)">
-        <input type="text" id="quickActionDesc" placeholder="Description (optional)">
-        <select id="quickActionClass">
-          <option value="btn-primary">Primary (Purple)</option>
-          <option value="btn-success">Success (Green)</option>
-          <option value="btn-warning">Warning (Orange)</option>
-          <option value="btn-info">Info (Blue)</option>
-          <option value="btn-danger">Danger (Red)</option>
-        </select>
-        <button class="btn btn-success" onclick="saveQuickAction()">Add Quick Action</button>
-      </div>
-
-      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Custom Quick Actions</h3>
-      <div id="quickActionsManager" style="min-height: 50px;">
-        <p style="color: #6b7280; font-style: italic;">No custom quick actions. Add one above.</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Manage Operating Systems</h2>
-      <p style="color: #6b7280; margin-bottom: 15px;">Create custom operating system categories with their own quick actions</p>
-
-      <div style="margin-bottom: 15px;">
-        <button class="btn btn-primary" onclick="addCustomOS()">Add Custom OS</button>
-      </div>
-
-      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Custom Operating Systems</h3>
-      <div id="customOSList" style="min-height: 50px;">
-        <p style="color: #6b7280; font-style: italic;">Loading...</p>
       </div>
     </div>
 

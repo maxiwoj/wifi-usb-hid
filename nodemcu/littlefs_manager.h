@@ -21,6 +21,9 @@ bool addCustomOS(String osName);
 bool deleteCustomOS(String osName);
 String loadCustomOSList();
 
+// Initialize default quick actions
+void initializeDefaultQuickActions();
+
 extern bool littlefsAvailable;
 
 #endif //LITTLEFS_MANAGER_H

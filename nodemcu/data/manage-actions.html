@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Quick Actions - WiFi USB HID</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Manage Quick Actions</h1>
+        <p style="color: #6b7280; margin-top: 5px;">Create, edit, and delete quick action buttons for any operating system</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-info" onclick="location.href='/'">Back to Home</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Select Operating System</h2>
+      <select id="osManagerSelect" onchange="loadQuickActionsManager()">
+        <option value="Windows">Windows</option>
+        <option value="MacOS">MacOS</option>
+        <option value="Linux">Linux</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Add Quick Action</h2>
+      <div style="display: grid; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Command:</label>
+          <input type="text" id="quickActionCmd" placeholder="e.g., GUI_A, CTRL_C, ALT_TAB">
+          <p style="font-size: 12px; color: #6b7280; margin: 5px 0 0 0;">
+            Use DuckyScript commands like GUI, CTRL, ALT, SHIFT with underscores (e.g., CTRL_ALT_DELETE)
+          </p>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Label:</label>
+          <input type="text" id="quickActionLabel" placeholder="e.g., Select All, Copy, Paste">
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Description (Optional):</label>
+          <input type="text" id="quickActionDesc" placeholder="e.g., Select all text in current window">
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Color:</label>
+          <select id="quickActionClass">
+            <option value="btn-primary">Primary (Purple)</option>
+            <option value="btn-success">Success (Green)</option>
+            <option value="btn-warning">Warning (Orange)</option>
+            <option value="btn-info">Info (Blue)</option>
+            <option value="btn-danger">Danger (Red)</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="saveQuickAction()">Add Quick Action</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Actions List</h2>
+      <p style="color: #6b7280; margin-bottom: 15px;">All quick actions for <strong id="currentOSName">Windows</strong></p>
+      <div id="quickActionsManager" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">Loading...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initialize the management page
+    (function() {
+      log('Quick Actions Manager loaded');
+      loadCustomOS();
+      loadQuickActionsManager();
+
+      // Update OS name display
+      document.getElementById('osManagerSelect').addEventListener('change', function() {
+        document.getElementById('currentOSName').textContent = this.value;
+      });
+    })();
+  </script>
+</body>
+</html>

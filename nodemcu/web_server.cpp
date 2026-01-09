@@ -85,6 +85,8 @@ void setupWebServer() {
   // Register routes on HTTP server
   server.on("/", HTTP_GET, handleRoot);
   server.on("/setup", HTTP_GET, handleSetup);
+  server.on("/manage-actions.html", HTTP_GET, handleManageActions);
+  server.on("/manage-os.html", HTTP_GET, handleManageOS);
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/script.js", HTTP_GET, handleJS);
   server.on("/api/command", HTTP_POST, handleCommand);
@@ -121,6 +123,8 @@ void setupWebServer() {
   // Register same routes on HTTPS server
   secureServer.on("/", HTTP_GET, handleRoot);
   secureServer.on("/setup", HTTP_GET, handleSetup);
+  secureServer.on("/manage-actions.html", HTTP_GET, handleManageActions);
+  secureServer.on("/manage-os.html", HTTP_GET, handleManageOS);
   secureServer.on("/style.css", HTTP_GET, handleCSS);
   secureServer.on("/script.js", HTTP_GET, handleJS);
   secureServer.on("/api/command", HTTP_POST, handleCommand);
@@ -169,6 +173,16 @@ void handleRoot() {
 void handleSetup() {
   if (!checkAuthentication()) return;
   serveStaticFile("/setup.html", "text/html");
+}
+
+void handleManageActions() {
+  if (!checkAuthentication()) return;
+  serveStaticFile("/manage-actions.html", "text/html");
+}
+
+void handleManageOS() {
+  if (!checkAuthentication()) return;
+  serveStaticFile("/manage-os.html", "text/html");
 }
 
 void handleCSS() {

@@ -114,57 +114,23 @@ let jigglerEnabled = false;
       });
     }
 
-    const defaultActions = {
-      'Windows': [
-        { cmd: 'GUI_R', label: 'Win+R', desc: 'Run Dialog', class: 'btn-primary' },
-        { cmd: 'GUI_SPACE', label: 'Win+Space', desc: 'Input Switch', class: 'btn-primary' },
-        { cmd: 'GUI_D', label: 'Win+D', desc: 'Show Desktop', class: 'btn-primary' },
-        { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-        { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-        { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-        { cmd: 'BACKSPACE', label: 'Backspace', desc: 'Backspace', class: 'btn-warning' },
-        { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-      ],
-      'MacOS': [
-        { cmd: 'GUI_SPACE', label: '⌘+Space', desc: 'Spotlight', class: 'btn-primary' },
-        { cmd: 'GUI_TAB', label: '⌘+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-        { cmd: 'GUI_D', label: '⌘+D', desc: 'Show Desktop', class: 'btn-primary' },
-        { cmd: 'GUI_H', label: '⌘+H', desc: 'Hide App', class: 'btn-primary' },
-        { cmd: 'GUI_W', label: '⌘+W', desc: 'Close Window', class: 'btn-primary' },
-        { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-        { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-        { cmd: 'BACKSPACE', label: 'Backspace', desc: 'Backspace', class: 'btn-warning' },
-        { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-      ],
-      'Linux': [
-        { cmd: 'GUI', label: 'Super', desc: 'Super Key', class: 'btn-primary' },
-        { cmd: 'GUI_SPACE', label: 'Super+Space', desc: 'App Launcher', class: 'btn-primary' },
-        { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-        { cmd: 'CTRL_ALT_T', label: 'Ctrl+Alt+T', desc: 'Terminal', class: 'btn-primary' },
-        { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-        { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-        { cmd: 'BACKSPACE', label: 'Backspace', desc: 'Backspace', class: 'btn-warning' },
-        { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-      ]
-    };
-
     function updateQuickActions() {
       const os = document.getElementById('osSelect').value;
       const quickActionsDiv = document.getElementById('quickActions');
       quickActionsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      // Get default actions for this OS
-      let osActions = defaultActions[os] || [];
-
-      // Load custom actions for this OS
+      // Load all actions for this OS from storage
       fetch('/api/quickactions?os=' + encodeURIComponent(os))
         .then(response => response.json())
-        .then(customActions => {
-          // Merge custom actions with default actions
-          const allActions = [...osActions, ...customActions];
-
+        .then(actions => {
           quickActionsDiv.innerHTML = '';
-          allActions.forEach(action => {
+
+          if (actions.length === 0) {
+            quickActionsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick actions for this OS. Add some in <a href="manage-actions.html" style="color: #667eea;">Manage Actions</a>.</p>';
+            return;
+          }
+
+          actions.forEach(action => {
             const button = document.createElement('button');
             button.className = 'btn ' + action.class;
             button.setAttribute('onclick', "sendCommand('" + action.cmd + "')");
@@ -174,17 +140,8 @@ let jigglerEnabled = false;
           });
         })
         .catch(error => {
-          // If error loading custom actions, just show default ones
-          console.error('Error loading custom quick actions:', error);
-          quickActionsDiv.innerHTML = '';
-          osActions.forEach(action => {
-            const button = document.createElement('button');
-            button.className = 'btn ' + action.class;
-            button.setAttribute('onclick', "sendCommand('" + action.cmd + "')");
-            button.setAttribute('title', action.desc);
-            button.textContent = action.label;
-            quickActionsDiv.appendChild(button);
-          });
+          console.error('Error loading quick actions:', error);
+          quickActionsDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick actions. Please refresh the page.</p>';
         });
     }
 
@@ -605,8 +562,14 @@ let jigglerEnabled = false;
       const listDiv = document.getElementById('customOSList');
       if (!listDiv) return;
 
+      // Check if we have a manage page version
+      if (typeof displayCustomOSListOnManagePage === 'function') {
+        displayCustomOSListOnManagePage(customOSList);
+        return;
+      }
+
       if (customOSList.length === 0) {
-        listDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No custom operating systems. Click "Add Custom OS" to create one.</p>';
+        listDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No custom operating systems.</p>';
         return;
       }
 

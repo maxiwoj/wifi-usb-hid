@@ -24,6 +24,9 @@ void setup() {
 
   setupLittleFS();
 
+  // Initialize default quick actions if not already done
+  initializeDefaultQuickActions();
+
   loadWiFiCredentials();
  
   if (currentSSID.length() > 0) {

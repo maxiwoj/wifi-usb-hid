@@ -459,3 +459,59 @@ String loadCustomOSList() {
 
   return content;
 }
+
+// Initialize Default Quick Actions
+void initializeDefaultQuickActions() {
+  if (!littlefsAvailable) {
+    Serial.println("LittleFS not available - cannot initialize default quick actions");
+    return;
+  }
+
+  // Check if defaults have already been initialized
+  if (LittleFS.exists("/defaults_initialized.txt")) {
+    Serial.println("Default quick actions already initialized");
+    return;
+  }
+
+  Serial.println("Initializing default quick actions...");
+
+  // Windows default actions
+  saveQuickAction("Windows", "GUI_R", "Win+R", "Run Dialog", "btn-primary");
+  saveQuickAction("Windows", "GUI_SPACE", "Win+Space", "Input Switch", "btn-primary");
+  saveQuickAction("Windows", "GUI_D", "Win+D", "Show Desktop", "btn-primary");
+  saveQuickAction("Windows", "ALT_TAB", "Alt+Tab", "Switch Apps", "btn-primary");
+  saveQuickAction("Windows", "ENTER", "Enter", "Enter", "btn-success");
+  saveQuickAction("Windows", "ESC", "Escape", "Escape", "btn-warning");
+  saveQuickAction("Windows", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
+  saveQuickAction("Windows", "TAB", "Tab", "Tab", "btn-info");
+
+  // MacOS default actions
+  saveQuickAction("MacOS", "GUI_SPACE", "⌘+Space", "Spotlight", "btn-primary");
+  saveQuickAction("MacOS", "GUI_TAB", "⌘+Tab", "Switch Apps", "btn-primary");
+  saveQuickAction("MacOS", "GUI_D", "⌘+D", "Show Desktop", "btn-primary");
+  saveQuickAction("MacOS", "GUI_H", "⌘+H", "Hide App", "btn-primary");
+  saveQuickAction("MacOS", "GUI_W", "⌘+W", "Close Window", "btn-primary");
+  saveQuickAction("MacOS", "ENTER", "Enter", "Enter", "btn-success");
+  saveQuickAction("MacOS", "ESC", "Escape", "Escape", "btn-warning");
+  saveQuickAction("MacOS", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
+  saveQuickAction("MacOS", "TAB", "Tab", "Tab", "btn-info");
+
+  // Linux default actions
+  saveQuickAction("Linux", "GUI", "Super", "Super Key", "btn-primary");
+  saveQuickAction("Linux", "GUI_SPACE", "Super+Space", "App Launcher", "btn-primary");
+  saveQuickAction("Linux", "ALT_TAB", "Alt+Tab", "Switch Apps", "btn-primary");
+  saveQuickAction("Linux", "CTRL_ALT_T", "Ctrl+Alt+T", "Terminal", "btn-primary");
+  saveQuickAction("Linux", "ENTER", "Enter", "Enter", "btn-success");
+  saveQuickAction("Linux", "ESC", "Escape", "Escape", "btn-warning");
+  saveQuickAction("Linux", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
+  saveQuickAction("Linux", "TAB", "Tab", "Tab", "btn-info");
+
+  // Mark as initialized
+  File file = LittleFS.open("/defaults_initialized.txt", "w");
+  if (file) {
+    file.print("1");
+    file.close();
+  }
+
+  Serial.println("Default quick actions initialized successfully");
+}
