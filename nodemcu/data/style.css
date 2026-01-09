@@ -225,6 +225,13 @@
       margin: 0;
     }
 
+    .script-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 768px) {
       .button-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -232,5 +239,20 @@
 
       .trackpad {
         height: 250px;
+      }
+
+      .script-controls {
+        flex-direction: column;
+      }
+
+      .script-controls input[type="text"] {
+        width: 100%;
+        flex: none;
+        margin-bottom: 10px;
+      }
+
+      .script-controls .btn {
+        width: 100%;
+        margin: 0 0 5px 0;
       }
     }
