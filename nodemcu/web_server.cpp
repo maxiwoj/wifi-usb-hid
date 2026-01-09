@@ -98,6 +98,12 @@ void setupWebServer() {
   server.on("/api/scripts", HTTP_POST, handleSaveScript);
   server.on("/api/scripts/load", HTTP_POST, handleLoadScript);
   server.on("/api/scripts/delete", HTTP_POST, handleDeleteScript);
+  server.on("/api/quickactions", HTTP_GET, handleListQuickActions);
+  server.on("/api/quickactions", HTTP_POST, handleSaveQuickAction);
+  server.on("/api/quickactions/delete", HTTP_POST, handleDeleteQuickAction);
+  server.on("/api/customos", HTTP_GET, handleListCustomOS);
+  server.on("/api/customos", HTTP_POST, handleSaveCustomOS);
+  server.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
 
   server.begin();
   Serial.println("HTTP server started on port 80");
@@ -128,6 +134,12 @@ void setupWebServer() {
   secureServer.on("/api/scripts", HTTP_POST, handleSaveScript);
   secureServer.on("/api/scripts/load", HTTP_POST, handleLoadScript);
   secureServer.on("/api/scripts/delete", HTTP_POST, handleDeleteScript);
+  secureServer.on("/api/quickactions", HTTP_GET, handleListQuickActions);
+  secureServer.on("/api/quickactions", HTTP_POST, handleSaveQuickAction);
+  secureServer.on("/api/quickactions/delete", HTTP_POST, handleDeleteQuickAction);
+  secureServer.on("/api/customos", HTTP_GET, handleListCustomOS);
+  secureServer.on("/api/customos", HTTP_POST, handleSaveCustomOS);
+  secureServer.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
 
   secureServer.begin();
   httpsEnabled = true;
@@ -362,5 +374,179 @@ void handleDeleteScript() {
     }
   } else {
     SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+  }
+}
+
+// Quick Actions Management Handlers
+
+void handleListQuickActions() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing os parameter\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String content = loadQuickActions(os);
+
+  String json = "[";
+  if (content.length() > 0) {
+    bool first = true;
+    int startPos = 0;
+    int endPos;
+
+    while ((endPos = content.indexOf('\n', startPos)) != -1) {
+      String line = content.substring(startPos, endPos);
+      if (line.length() > 0) {
+        // Parse line: cmd|label|desc|class
+        int pipe1 = line.indexOf('|');
+        int pipe2 = line.indexOf('|', pipe1 + 1);
+        int pipe3 = line.indexOf('|', pipe2 + 1);
+
+        if (pipe1 > 0 && pipe2 > pipe1 && pipe3 > pipe2) {
+          String cmd = line.substring(0, pipe1);
+          String label = line.substring(pipe1 + 1, pipe2);
+          String desc = line.substring(pipe2 + 1, pipe3);
+          String btnClass = line.substring(pipe3 + 1);
+
+          if (!first) json += ",";
+          first = false;
+
+          json += "{";
+          json += "\"cmd\":\"" + escapeJson(cmd) + "\",";
+          json += "\"label\":\"" + escapeJson(label) + "\",";
+          json += "\"desc\":\"" + escapeJson(desc) + "\",";
+          json += "\"class\":\"" + escapeJson(btnClass) + "\"";
+          json += "}";
+        }
+      }
+      startPos = endPos + 1;
+    }
+  }
+
+  json += "]";
+  SERVER_SEND(200, "application/json", json);
+}
+
+void handleSaveQuickAction() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os") || !SERVER_HAS_ARG("cmd") || !SERVER_HAS_ARG("label") ||
+      !SERVER_HAS_ARG("desc") || !SERVER_HAS_ARG("class")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String cmd = SERVER_ARG("cmd");
+  String label = SERVER_ARG("label");
+  String desc = SERVER_ARG("desc");
+  String btnClass = SERVER_ARG("class");
+
+  if (cmd.length() == 0 || label.length() == 0) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Command and label cannot be empty\"}");
+    return;
+  }
+
+  if (saveQuickAction(os, cmd, label, desc, btnClass)) {
+    displayAction("Quick action saved");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Quick action saved\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save quick action\"}");
+  }
+}
+
+void handleDeleteQuickAction() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os") || !SERVER_HAS_ARG("cmd")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing os or cmd parameter\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String cmd = SERVER_ARG("cmd");
+
+  if (deleteQuickAction(os, cmd)) {
+    displayAction("Quick action deleted");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Quick action deleted\"}");
+  } else {
+    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Quick action not found\"}");
+  }
+}
+
+// Custom OS Management Handlers
+
+void handleListCustomOS() {
+  if (!checkAuthentication()) return;
+
+  String content = loadCustomOSList();
+
+  String json = "[";
+  if (content.length() > 0) {
+    bool first = true;
+    int startPos = 0;
+    int endPos;
+
+    while ((endPos = content.indexOf('\n', startPos)) != -1) {
+      String line = content.substring(startPos, endPos);
+      if (line.length() > 0) {
+        if (!first) json += ",";
+        first = false;
+        json += "\"" + escapeJson(line) + "\"";
+      }
+      startPos = endPos + 1;
+    }
+  }
+
+  json += "]";
+  SERVER_SEND(200, "application/json", json);
+}
+
+void handleSaveCustomOS() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("name")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    return;
+  }
+
+  String osName = SERVER_ARG("name");
+
+  if (osName.length() == 0) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"OS name cannot be empty\"}");
+    return;
+  }
+
+  // Check if it's a default OS
+  if (osName == "Windows" || osName == "MacOS" || osName == "Linux") {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Cannot add default OS as custom\"}");
+    return;
+  }
+
+  if (addCustomOS(osName)) {
+    displayAction("Custom OS added: " + osName);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Custom OS added\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to add custom OS\"}");
+  }
+}
+
+void handleDeleteCustomOS() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("name")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    return;
+  }
+
+  String osName = SERVER_ARG("name");
+
+  if (deleteCustomOS(osName)) {
+    displayAction("Custom OS deleted: " + osName);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Custom OS deleted\"}");
+  } else {
+    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Custom OS not found\"}");
   }
 }

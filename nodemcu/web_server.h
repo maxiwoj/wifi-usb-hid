@@ -21,5 +21,11 @@ void handleListScripts();
 void handleSaveScript();
 void handleLoadScript();
 void handleDeleteScript();
+void handleListQuickActions();
+void handleSaveQuickAction();
+void handleDeleteQuickAction();
+void handleListCustomOS();
+void handleSaveCustomOS();
+void handleDeleteCustomOS();
 
 #endif //WEB_SERVER_H
