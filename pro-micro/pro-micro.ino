@@ -24,7 +24,6 @@ unsigned long jiggleInterval = 2000; // 2 seconds (configurable)
 int jiggleDirection = 1;
 int jiggleDiameter = 2; // configurable diameter
 String jiggleType = "simple"; // simple, circles, random
-float jiggleAngle = 0; // for circular motion
 
 // Command buffer
 String commandBuffer = "";
@@ -75,12 +74,14 @@ void loop() {
         jiggleDirection *= -1; // Alternate direction
       }
       else if (jiggleType == "circles") {
-        // Circular movement
-        int x = (int)(jiggleDiameter * cos(jiggleAngle));
-        int y = (int)(jiggleDiameter * sin(jiggleAngle));
-        Mouse.move(x, y, 0);
-        jiggleAngle += 0.785; // ~45 degrees in radians (PI/4)
-        if (jiggleAngle >= 6.28) jiggleAngle = 0; // Reset after full circle (2*PI)
+        // Draw a complete circle
+        for (int angle = 0; angle < 360; angle += 10) {
+          float radians = angle * 3.14159 / 180.0;
+          int x = (int)(cos(radians) * jiggleDiameter);
+          int y = (int)(sin(radians) * jiggleDiameter);
+          Mouse.move(x, y, 0);
+          delay(5);
+        }
       }
       else if (jiggleType == "random") {
         // Random movement
@@ -120,7 +121,6 @@ void processCommand(String cmd) {
         type.toLowerCase();
         if (type == "simple" || type == "circles" || type == "random") {
           jiggleType = type;
-          jiggleAngle = 0; // Reset angle for circles
         }
 
         if (diameter > 0 && diameter <= 100) {
