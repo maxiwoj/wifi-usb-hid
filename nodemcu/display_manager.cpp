@@ -78,14 +78,30 @@ void setupDisplay() {
       Serial.println("OLED display is working!");
       delay(2000);
 
-      // Show actual startup message
+      // Show formatted startup logo
       display.clearDisplay();
+      display.setTextColor(SSD1306_WHITE);
+
+      // Large title
+      display.setTextSize(2);
+      display.setCursor(10, 8);
+      display.println("WiFi HID");
+
+      // Decorative separator
       display.setTextSize(1);
-      display.setCursor(0, 0);
-      display.println("WiFi USB HID Control");
-      display.println("Initializing...");
+      display.setCursor(20, 28);
+      display.println("===========");
+
+      // Subtitle
+      display.setCursor(15, 42);
+      display.println("USB Control");
+
+      // Status
+      display.setCursor(20, 54);
+      display.println("Starting...");
+
       display.display();
-      delay(500);
+      delay(1500);
     } else {
       Serial.println("Display initialization failed at 0x3C");
 
@@ -107,13 +123,30 @@ void setupDisplay() {
         Serial.println("OLED display working at 0x3D!");
         delay(2000);
 
+        // Show formatted startup logo
         display.clearDisplay();
+        display.setTextColor(SSD1306_WHITE);
+
+        // Large title
+        display.setTextSize(2);
+        display.setCursor(10, 8);
+        display.println("WiFi HID");
+
+        // Decorative separator
         display.setTextSize(1);
-        display.setCursor(0, 0);
-        display.println("WiFi HID Control");
-        display.println("Initializing...");
+        display.setCursor(20, 28);
+        display.println("===========");
+
+        // Subtitle
+        display.setCursor(15, 42);
+        display.println("USB Control");
+
+        // Status
+        display.setCursor(20, 54);
+        display.println("Starting...");
+
         display.display();
-        delay(500);
+        delay(1500);
       } else {
         Serial.println("Display not found at 0x3C or 0x3D");
         displayAvailable = false;
@@ -144,40 +177,44 @@ void updateDisplayStatus() {
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
 
-  // Title
-  display.setTextSize(1);
+  // Title - compact
   display.println("WiFi HID Control");
-  display.println("----------------");
 
-  // WiFi Status
+  // Mode and IP on same line - saves space
   if (isAPMode) {
-    display.println("Mode: Access Point");
-    display.print("WiFi: ");
+    display.println("AP  192.168.4.1");
+    display.print("WiFi:");
     display.println(AP_SSID);
-    display.print("Pass: ");
+    display.print("Pass:");
     display.println(AP_PASS);
-    display.print("IP: 192.168.4.1");
   } else {
-    display.println("Mode: Station");
-    display.print("Net: ");
-    display.println(currentSSID);
-    display.print("IP: ");
+    display.print("ST  ");
     display.println(WiFi.localIP().toString());
+    display.print("Net:");
+    display.println(currentSSID);
+    // Don't show password in station mode to save space
   }
 
-  // Web Authentication
-  display.println();
-  display.print("Web: ");
+  // Web Authentication - compact format
+  display.print("Web:");
   display.print(WEB_AUTH_USER);
   display.print("/");
-  display.println(WEB_AUTH_PASS);
+  // Truncate password if too long
+  String webPass = String(WEB_AUTH_PASS);
+  if (webPass.length() > 12) {
+    display.println(webPass.substring(0, 12) + "...");
+  } else {
+    display.println(webPass);
+  }
 
-  // Last action (if any)
+  // Blank line for separation
+  display.println();
+
+  // Last action (if any) - now has dedicated space
   if (lastAction.length() > 0) {
     unsigned long timeSinceAction = millis() - lastActionTime;
     if (timeSinceAction < 3000) { // Show for 3 seconds
-      display.println();
-      display.print("> ");
+      display.print(">");
       display.println(lastAction);
     }
   }
