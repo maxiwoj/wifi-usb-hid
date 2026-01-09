@@ -460,58 +460,209 @@ String loadCustomOSList() {
   return content;
 }
 
+// Quick Scripts Management Functions
+
+String getQuickScriptsFilename(String os) {
+  String filename = os;
+  filename.replace(" ", "_");
+  filename.replace("/", "_");
+  filename.replace("\\", "_");
+  filename.replace("..", "_");
+  return String("/quickscripts_") + filename + ".txt";
+}
+
+bool saveQuickScript(String os, String id, String label, String script, String btnClass) {
+  if (!littlefsAvailable) {
+    Serial.println("LittleFS not available for saving quick script");
+    return false;
+  }
+
+  String filename = getQuickScriptsFilename(os);
+
+  // Load existing scripts
+  String content = "";
+  if (LittleFS.exists(filename)) {
+    File file = LittleFS.open(filename, "r");
+    if (file) {
+      while (file.available()) {
+        content += (char)file.read();
+      }
+      file.close();
+    }
+  }
+
+  // Check if script already exists and remove it
+  String newContent = "";
+  int startPos = 0;
+  int endPos;
+  while ((endPos = content.indexOf('\n', startPos)) != -1) {
+    String line = content.substring(startPos, endPos);
+    int firstPipe = line.indexOf('|');
+    if (firstPipe > 0) {
+      String existingId = line.substring(0, firstPipe);
+      if (existingId != id) {
+        newContent += line + "\n";
+      }
+    }
+    startPos = endPos + 1;
+  }
+  // Handle last line
+  if (startPos < content.length()) {
+    String line = content.substring(startPos);
+    int firstPipe = line.indexOf('|');
+    if (firstPipe > 0) {
+      String existingId = line.substring(0, firstPipe);
+      if (existingId != id) {
+        newContent += line + "\n";
+      }
+    }
+  }
+
+  // Escape newlines in script for storage
+  String escapedScript = script;
+  escapedScript.replace("\n", "\\n");
+
+  // Add new script (format: id|label|script|class)
+  newContent += id + "|" + label + "|" + escapedScript + "|" + btnClass + "\n";
+
+  // Save to file
+  File file = LittleFS.open(filename, "w");
+  if (!file) {
+    Serial.println("Failed to open file for writing: " + filename);
+    return false;
+  }
+
+  file.print(newContent);
+  file.close();
+
+  Serial.println("Quick script saved for " + os + ": " + id);
+  return true;
+}
+
+String loadQuickScripts(String os) {
+  if (!littlefsAvailable) {
+    return "";
+  }
+
+  String filename = getQuickScriptsFilename(os);
+
+  if (!LittleFS.exists(filename)) {
+    return "";
+  }
+
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    Serial.println("Failed to open file for reading: " + filename);
+    return "";
+  }
+
+  String content = "";
+  while (file.available()) {
+    content += (char)file.read();
+  }
+  file.close();
+
+  return content;
+}
+
+bool deleteQuickScript(String os, String id) {
+  if (!littlefsAvailable) {
+    Serial.println("LittleFS not available for deleting quick script");
+    return false;
+  }
+
+  String filename = getQuickScriptsFilename(os);
+
+  if (!LittleFS.exists(filename)) {
+    return false;
+  }
+
+  // Load existing scripts
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    return false;
+  }
+
+  String content = "";
+  while (file.available()) {
+    content += (char)file.read();
+  }
+  file.close();
+
+  // Remove the script
+  String newContent = "";
+  bool found = false;
+  int startPos = 0;
+  int endPos;
+  while ((endPos = content.indexOf('\n', startPos)) != -1) {
+    String line = content.substring(startPos, endPos);
+    int firstPipe = line.indexOf('|');
+    if (firstPipe > 0) {
+      String existingId = line.substring(0, firstPipe);
+      if (existingId == id) {
+        found = true;
+      } else {
+        newContent += line + "\n";
+      }
+    }
+    startPos = endPos + 1;
+  }
+  // Handle last line
+  if (startPos < content.length()) {
+    String line = content.substring(startPos);
+    int firstPipe = line.indexOf('|');
+    if (firstPipe > 0) {
+      String existingId = line.substring(0, firstPipe);
+      if (existingId == id) {
+        found = true;
+      } else {
+        newContent += line + "\n";
+      }
+    }
+  }
+
+  if (!found) {
+    return false;
+  }
+
+  // Save back to file
+  file = LittleFS.open(filename, "w");
+  if (!file) {
+    return false;
+  }
+
+  file.print(newContent);
+  file.close();
+
+  Serial.println("Quick script deleted from " + os + ": " + id);
+  return true;
+}
+
+bool deleteAllQuickScripts(String os) {
+  if (!littlefsAvailable) {
+    Serial.println("LittleFS not available");
+    return false;
+  }
+
+  String filename = getQuickScriptsFilename(os);
+
+  if (LittleFS.exists(filename)) {
+    LittleFS.remove(filename);
+    Serial.println("All quick scripts deleted for: " + os);
+    return true;
+  }
+
+  return false;
+}
+
 // Initialize Default Quick Actions
 void initializeDefaultQuickActions() {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available - cannot initialize default quick actions");
-    return;
-  }
+  // This function is now deprecated - default quick actions are loaded from
+  // data files (quickactions_Windows.txt, quickactions_MacOS.txt, quickactions_Linux.txt)
+  // that are uploaded to LittleFS using the "Upload Filesystem Image" tool.
+  //
+  // The files are created in the data/ folder and uploaded alongside HTML/CSS/JS files.
+  // No code-based initialization needed anymore.
 
-  // Check if defaults have already been initialized
-  if (LittleFS.exists("/defaults_initialized.txt")) {
-    Serial.println("Default quick actions already initialized");
-    return;
-  }
-
-  Serial.println("Initializing default quick actions...");
-
-  // Windows default actions
-  saveQuickAction("Windows", "GUI_R", "Win+R", "Run Dialog", "btn-primary");
-  saveQuickAction("Windows", "GUI_SPACE", "Win+Space", "Input Switch", "btn-primary");
-  saveQuickAction("Windows", "GUI_D", "Win+D", "Show Desktop", "btn-primary");
-  saveQuickAction("Windows", "ALT_TAB", "Alt+Tab", "Switch Apps", "btn-primary");
-  saveQuickAction("Windows", "ENTER", "Enter", "Enter", "btn-success");
-  saveQuickAction("Windows", "ESC", "Escape", "Escape", "btn-warning");
-  saveQuickAction("Windows", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
-  saveQuickAction("Windows", "TAB", "Tab", "Tab", "btn-info");
-
-  // MacOS default actions
-  saveQuickAction("MacOS", "GUI_SPACE", "⌘+Space", "Spotlight", "btn-primary");
-  saveQuickAction("MacOS", "GUI_TAB", "⌘+Tab", "Switch Apps", "btn-primary");
-  saveQuickAction("MacOS", "GUI_D", "⌘+D", "Show Desktop", "btn-primary");
-  saveQuickAction("MacOS", "GUI_H", "⌘+H", "Hide App", "btn-primary");
-  saveQuickAction("MacOS", "GUI_W", "⌘+W", "Close Window", "btn-primary");
-  saveQuickAction("MacOS", "ENTER", "Enter", "Enter", "btn-success");
-  saveQuickAction("MacOS", "ESC", "Escape", "Escape", "btn-warning");
-  saveQuickAction("MacOS", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
-  saveQuickAction("MacOS", "TAB", "Tab", "Tab", "btn-info");
-
-  // Linux default actions
-  saveQuickAction("Linux", "GUI", "Super", "Super Key", "btn-primary");
-  saveQuickAction("Linux", "GUI_SPACE", "Super+Space", "App Launcher", "btn-primary");
-  saveQuickAction("Linux", "ALT_TAB", "Alt+Tab", "Switch Apps", "btn-primary");
-  saveQuickAction("Linux", "CTRL_ALT_T", "Ctrl+Alt+T", "Terminal", "btn-primary");
-  saveQuickAction("Linux", "ENTER", "Enter", "Enter", "btn-success");
-  saveQuickAction("Linux", "ESC", "Escape", "Escape", "btn-warning");
-  saveQuickAction("Linux", "BACKSPACE", "Backspace", "Backspace", "btn-warning");
-  saveQuickAction("Linux", "TAB", "Tab", "Tab", "btn-info");
-
-  // Mark as initialized
-  File file = LittleFS.open("/defaults_initialized.txt", "w");
-  if (file) {
-    file.print("1");
-    file.close();
-  }
-
-  Serial.println("Default quick actions initialized successfully");
+  Serial.println("Quick actions will be loaded from LittleFS data files");
 }

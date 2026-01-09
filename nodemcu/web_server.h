@@ -26,8 +26,13 @@ void handleDeleteScript();
 void handleListQuickActions();
 void handleSaveQuickAction();
 void handleDeleteQuickAction();
+void handleReorderQuickActions();
 void handleListCustomOS();
 void handleSaveCustomOS();
 void handleDeleteCustomOS();
+void handleListQuickScripts();
+void handleSaveQuickScript();
+void handleDeleteQuickScript();
+void handleManageScripts();
 
 #endif //WEB_SERVER_H

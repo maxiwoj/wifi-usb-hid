@@ -21,6 +21,12 @@ bool addCustomOS(String osName);
 bool deleteCustomOS(String osName);
 String loadCustomOSList();
 
+// Quick scripts management
+bool saveQuickScript(String os, String id, String label, String script, String btnClass);
+String loadQuickScripts(String os);
+bool deleteQuickScript(String os, String id);
+bool deleteAllQuickScripts(String os);
+
 // Initialize default quick actions
 void initializeDefaultQuickActions();
 

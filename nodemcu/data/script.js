@@ -65,33 +65,41 @@ let jigglerEnabled = false;
       }
     }
 
-    function runQuickScript(scriptName) {
-      const os = document.getElementById('osSelect').value;
-      const scripts = {
-        'Windows': {
-          'editor': 'GUI r\nDELAY 500\nSTRING notepad\nENTER',
-          'terminal': 'GUI r\nDELAY 500\nSTRING cmd\nENTER',
-          'calculator': 'GUI r\nDELAY 500\nSTRING calc\nENTER',
-          'browser': 'GUI r\nDELAY 500\nSTRING chrome\nENTER'
-        },
-        'MacOS': {
-          'editor': 'GUI SPACE\nDELAY 500\nSTRING textedit\nENTER',
-          'terminal': 'GUI SPACE\nDELAY 500\nSTRING terminal\nENTER',
-          'calculator': 'GUI SPACE\nDELAY 500\nSTRING calculator\nENTER',
-          'browser': 'GUI SPACE\nDELAY 500\nSTRING safari\nENTER'
-        },
-        'Linux': {
-          'editor': 'CTRL ALT T\nDELAY 1000\nSTRING gedit\nENTER',
-          'terminal': 'CTRL ALT T',
-          'calculator': 'GUI\nDELAY 500\nSTRING calc\nENTER',
-          'browser': 'GUI\nDELAY 500\nSTRING firefox\nENTER'
-        }
-      };
+    function runQuickScript(scriptId, script) {
+      executeScriptText(script);
+      log('Running quick script: ' + scriptId);
+    }
 
-      const script = scripts[os][scriptName];
-      if (script) {
-        executeScriptText(script);
-      }
+    function loadQuickScripts() {
+      const os = document.getElementById('osSelect').value;
+      const quickScriptsDiv = document.getElementById('quickScripts');
+
+      if (!quickScriptsDiv) return; // Not on main page
+
+      quickScriptsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(scripts => {
+          quickScriptsDiv.innerHTML = '';
+
+          if (scripts.length === 0) {
+            quickScriptsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick scripts for this OS. Add some in <a href="manage-scripts.html" style="color: #667eea;">Manage Scripts</a>.</p>';
+            return;
+          }
+
+          scripts.forEach(script => {
+            const button = document.createElement('button');
+            button.className = 'btn ' + script.class;
+            button.setAttribute('onclick', "runQuickScript('" + script.id + "', `" + script.script.replace(/`/g, '\\`') + "`)");
+            button.textContent = script.label;
+            quickScriptsDiv.appendChild(button);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading quick scripts:', error);
+          quickScriptsDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick scripts. Please refresh the page.</p>';
+        });
     }
 
     function executeScript() {
@@ -762,13 +770,17 @@ let jigglerEnabled = false;
       }
     }
 
-    // Update Quick Actions when OS selection changes
-    document.getElementById('osSelect').addEventListener('change', updateQuickActions);
+    // Update Quick Actions and Quick Scripts when OS selection changes
+    document.getElementById('osSelect').addEventListener('change', function() {
+      updateQuickActions();
+      loadQuickScripts();
+    });
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
     loadCustomOS();
     updateQuickActions();
+    loadQuickScripts();
     loadSavedScripts();
     loadDeviceStatus();
 

@@ -99,12 +99,12 @@
     </div>
 
     <div class="card">
-      <h2>Quick Scripts</h2>
-      <div class="button-grid">
-        <button class="btn btn-primary" onclick="runQuickScript('editor')">Open Editor</button>
-        <button class="btn btn-success" onclick="runQuickScript('terminal')">Terminal</button>
-        <button class="btn btn-warning" onclick="runQuickScript('calculator')">Calculator</button>
-        <button class="btn btn-info" onclick="runQuickScript('browser')">Browser</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Quick Scripts</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-scripts.html'" style="padding: 8px 16px; font-size: 14px;">Manage Scripts</button>
+      </div>
+      <div class="button-grid" id="quickScripts">
+        <!-- Buttons will be dynamically generated based on OS selection -->
       </div>
     </div>
 

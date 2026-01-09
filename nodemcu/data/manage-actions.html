@@ -75,6 +75,110 @@
 
   <script src="script.js"></script>
   <script>
+    // Override loadQuickActionsManager to add reorder buttons
+    function loadQuickActionsManager() {
+      const managerDiv = document.getElementById('quickActionsManager');
+      if (!managerDiv) return;
+
+      const os = document.getElementById('osManagerSelect').value;
+      managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(actions => {
+          if (actions.length === 0) {
+            managerDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick actions for this OS. Add one above.</p>';
+            return;
+          }
+
+          managerDiv.innerHTML = '';
+          actions.forEach((action, index) => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+            item.setAttribute('data-cmd', action.cmd);
+
+            const infoDiv = document.createElement('div');
+            infoDiv.innerHTML = '<strong>' + action.label + '</strong><br><small style="color: #6b7280;">' + action.cmd + ' - ' + action.desc + '</small>';
+
+            const btnGroup = document.createElement('div');
+            btnGroup.style.cssText = 'display: flex; gap: 5px;';
+
+            // Up button
+            if (index > 0) {
+              const upBtn = document.createElement('button');
+              upBtn.className = 'btn btn-info';
+              upBtn.textContent = '↑';
+              upBtn.style.cssText = 'padding: 5px 10px; font-size: 16px;';
+              upBtn.onclick = function() { moveAction(os, index, index - 1); };
+              btnGroup.appendChild(upBtn);
+            }
+
+            // Down button
+            if (index < actions.length - 1) {
+              const downBtn = document.createElement('button');
+              downBtn.className = 'btn btn-info';
+              downBtn.textContent = '↓';
+              downBtn.style.cssText = 'padding: 5px 10px; font-size: 16px;';
+              downBtn.onclick = function() { moveAction(os, index, index + 1); };
+              btnGroup.appendChild(downBtn);
+            }
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            deleteBtn.onclick = function() { deleteQuickAction(os, action.cmd); };
+            btnGroup.appendChild(deleteBtn);
+
+            item.appendChild(infoDiv);
+            item.appendChild(btnGroup);
+            managerDiv.appendChild(item);
+          });
+
+          // Store actions array for reordering
+          managerDiv.setAttribute('data-actions', JSON.stringify(actions));
+        })
+        .catch(error => {
+          managerDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick actions: ' + error + '</p>';
+        });
+    }
+
+    function moveAction(os, fromIndex, toIndex) {
+      const managerDiv = document.getElementById('quickActionsManager');
+      const actionsData = managerDiv.getAttribute('data-actions');
+      if (!actionsData) return;
+
+      const actions = JSON.parse(actionsData);
+
+      // Swap positions
+      const temp = actions[fromIndex];
+      actions[fromIndex] = actions[toIndex];
+      actions[toIndex] = temp;
+
+      // Send reorder request
+      const order = actions.map(a => a.cmd).join(',');
+
+      fetch('/api/quickactions/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) + '&order=' + encodeURIComponent(order)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick action reordered');
+          loadQuickActionsManager();
+          updateQuickActions();
+        } else {
+          log('Error: ' + (data.message || 'Failed to reorder'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
     // Initialize the management page
     (function() {
       log('Quick Actions Manager loaded');

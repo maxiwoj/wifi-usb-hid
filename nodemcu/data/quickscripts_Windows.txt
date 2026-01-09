@@ -1,0 +1,4 @@
+editor|Open Editor|GUI r\nDELAY 500\nSTRING notepad\nENTER|btn-primary
+terminal|Terminal|GUI r\nDELAY 500\nSTRING cmd\nENTER|btn-success
+calculator|Calculator|GUI r\nDELAY 500\nSTRING calc\nENTER|btn-warning
+browser|Browser|GUI r\nDELAY 500\nSTRING chrome\nENTER|btn-info

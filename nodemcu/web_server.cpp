@@ -87,6 +87,7 @@ void setupWebServer() {
   server.on("/setup", HTTP_GET, handleSetup);
   server.on("/manage-actions.html", HTTP_GET, handleManageActions);
   server.on("/manage-os.html", HTTP_GET, handleManageOS);
+  server.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/script.js", HTTP_GET, handleJS);
   server.on("/api/command", HTTP_POST, handleCommand);
@@ -103,6 +104,10 @@ void setupWebServer() {
   server.on("/api/quickactions", HTTP_GET, handleListQuickActions);
   server.on("/api/quickactions", HTTP_POST, handleSaveQuickAction);
   server.on("/api/quickactions/delete", HTTP_POST, handleDeleteQuickAction);
+  server.on("/api/quickactions/reorder", HTTP_POST, handleReorderQuickActions);
+  server.on("/api/quickscripts", HTTP_GET, handleListQuickScripts);
+  server.on("/api/quickscripts", HTTP_POST, handleSaveQuickScript);
+  server.on("/api/quickscripts/delete", HTTP_POST, handleDeleteQuickScript);
   server.on("/api/customos", HTTP_GET, handleListCustomOS);
   server.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   server.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
@@ -125,6 +130,7 @@ void setupWebServer() {
   secureServer.on("/setup", HTTP_GET, handleSetup);
   secureServer.on("/manage-actions.html", HTTP_GET, handleManageActions);
   secureServer.on("/manage-os.html", HTTP_GET, handleManageOS);
+  secureServer.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
   secureServer.on("/style.css", HTTP_GET, handleCSS);
   secureServer.on("/script.js", HTTP_GET, handleJS);
   secureServer.on("/api/command", HTTP_POST, handleCommand);
@@ -141,6 +147,10 @@ void setupWebServer() {
   secureServer.on("/api/quickactions", HTTP_GET, handleListQuickActions);
   secureServer.on("/api/quickactions", HTTP_POST, handleSaveQuickAction);
   secureServer.on("/api/quickactions/delete", HTTP_POST, handleDeleteQuickAction);
+  secureServer.on("/api/quickactions/reorder", HTTP_POST, handleReorderQuickActions);
+  secureServer.on("/api/quickscripts", HTTP_GET, handleListQuickScripts);
+  secureServer.on("/api/quickscripts", HTTP_POST, handleSaveQuickScript);
+  secureServer.on("/api/quickscripts/delete", HTTP_POST, handleDeleteQuickScript);
   secureServer.on("/api/customos", HTTP_GET, handleListCustomOS);
   secureServer.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   secureServer.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
@@ -562,5 +572,190 @@ void handleDeleteCustomOS() {
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Custom OS deleted\"}");
   } else {
     SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Custom OS not found\"}");
+  }
+}
+
+// Quick Actions Reordering Handler
+
+void handleReorderQuickActions() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os") || !SERVER_HAS_ARG("order")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing os or order parameter\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String order = SERVER_ARG("order"); // Comma-separated list of cmd values
+
+  // Load existing actions
+  String content = loadQuickActions(os);
+  if (content.length() == 0) {
+    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"No actions found for this OS\"}");
+    return;
+  }
+
+  // Parse order list
+  String newContent = "";
+  int orderStart = 0;
+  int orderEnd;
+
+  while ((orderEnd = order.indexOf(',', orderStart)) != -1) {
+    String cmd = order.substring(orderStart, orderEnd);
+    cmd.trim();
+
+    // Find this action in content and add it
+    int startPos = 0;
+    int endPos;
+    while ((endPos = content.indexOf('\n', startPos)) != -1) {
+      String line = content.substring(startPos, endPos);
+      if (line.startsWith(cmd + "|")) {
+        newContent += line + "\n";
+        break;
+      }
+      startPos = endPos + 1;
+    }
+
+    orderStart = orderEnd + 1;
+  }
+
+  // Handle last cmd in order
+  if (orderStart < order.length()) {
+    String cmd = order.substring(orderStart);
+    cmd.trim();
+
+    int startPos = 0;
+    int endPos;
+    while ((endPos = content.indexOf('\n', startPos)) != -1) {
+      String line = content.substring(startPos, endPos);
+      if (line.startsWith(cmd + "|")) {
+        newContent += line + "\n";
+        break;
+      }
+      startPos = endPos + 1;
+    }
+  }
+
+  // Save reordered content
+  String filename = String("/quickactions_") + os + ".txt";
+  filename.replace(" ", "_");
+
+  File file = LittleFS.open(filename, "w");
+  if (!file) {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save reordered actions\"}");
+    return;
+  }
+
+  file.print(newContent);
+  file.close();
+
+  displayAction("Quick actions reordered");
+  SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Actions reordered\"}");
+}
+
+// Quick Scripts Management Handlers
+
+void handleManageScripts() {
+  if (!checkAuthentication()) return;
+  serveStaticFile("/manage-scripts.html", "text/html");
+}
+
+void handleListQuickScripts() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing os parameter\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String content = loadQuickScripts(os);
+
+  String json = "[";
+  if (content.length() > 0) {
+    bool first = true;
+    int startPos = 0;
+    int endPos;
+
+    while ((endPos = content.indexOf('\n', startPos)) != -1) {
+      String line = content.substring(startPos, endPos);
+      if (line.length() > 0) {
+        // Parse line: id|label|script|class
+        int pipe1 = line.indexOf('|');
+        int pipe2 = line.indexOf('|', pipe1 + 1);
+        int pipe3 = line.indexOf('|', pipe2 + 1);
+
+        if (pipe1 > 0 && pipe2 > pipe1 && pipe3 > pipe2) {
+          String id = line.substring(0, pipe1);
+          String label = line.substring(pipe1 + 1, pipe2);
+          String script = line.substring(pipe2 + 1, pipe3);
+          String btnClass = line.substring(pipe3 + 1);
+
+          // Unescape newlines
+          script.replace("\\n", "\n");
+
+          if (!first) json += ",";
+          first = false;
+
+          json += "{";
+          json += "\"id\":\"" + escapeJson(id) + "\",";
+          json += "\"label\":\"" + escapeJson(label) + "\",";
+          json += "\"script\":\"" + escapeJson(script) + "\",";
+          json += "\"class\":\"" + escapeJson(btnClass) + "\"";
+          json += "}";
+        }
+      }
+      startPos = endPos + 1;
+    }
+  }
+
+  json += "]";
+  SERVER_SEND(200, "application/json", json);
+}
+
+void handleSaveQuickScript() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os") || !SERVER_HAS_ARG("id") || !SERVER_HAS_ARG("label") ||
+      !SERVER_HAS_ARG("script") || !SERVER_HAS_ARG("class")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String id = SERVER_ARG("id");
+  String label = SERVER_ARG("label");
+  String script = SERVER_ARG("script");
+  String btnClass = SERVER_ARG("class");
+
+  if (id.length() == 0 || label.length() == 0 || script.length() == 0) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"ID, label, and script cannot be empty\"}");
+    return;
+  }
+
+  if (saveQuickScript(os, id, label, script, btnClass)) {
+    displayAction("Quick script saved");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Quick script saved\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save quick script\"}");
+  }
+}
+
+void handleDeleteQuickScript() {
+  if (!checkAuthentication()) return;
+
+  if (!SERVER_HAS_ARG("os") || !SERVER_HAS_ARG("id")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing os or id parameter\"}");
+    return;
+  }
+
+  String os = SERVER_ARG("os");
+  String id = SERVER_ARG("id");
+
+  if (deleteQuickScript(os, id)) {
+    displayAction("Quick script deleted");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Quick script deleted\"}");
+  } else {
+    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Quick script not found\"}");
   }
 }
