@@ -42,24 +42,24 @@
         <span id="jigglerStatus">Disabled</span>
       </div>
 
-      <div style="margin-top: 20px;">
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500;">Jiggle Type:</label>
-          <select id="jigglerType" onchange="updateJigglerType()" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db;">
-            <option value="simple">Simple (Left-Right)</option>
+      <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+        <div style="flex: 1; min-width: 120px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px;">Type:</label>
+          <select id="jigglerType" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px;">
+            <option value="simple">Simple</option>
             <option value="circles">Circles</option>
             <option value="random">Random</option>
           </select>
         </div>
 
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500;">Diameter (pixels): <span id="diameterValue">2</span></label>
-          <input type="range" id="jigglerDiameter" min="1" max="50" step="1" value="2" oninput="updateJigglerDiameter()" style="width: 100%;">
+        <div style="flex: 0.5; min-width: 100px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px;">Diameter (px):</label>
+          <input type="number" id="jigglerDiameter" min="1" max="50" value="2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px;">
         </div>
 
-        <div>
-          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500;">Delay (ms): <span id="delayValue">2000</span></label>
-          <input type="range" id="jigglerDelay" min="100" max="10000" step="100" value="2000" oninput="updateJigglerDelay()" style="width: 100%;">
+        <div style="flex: 0.5; min-width: 100px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px;">Delay (ms):</label>
+          <input type="number" id="jigglerDelay" min="100" max="60000" step="100" value="2000" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px;">
         </div>
       </div>
     </div>

@@ -103,45 +103,45 @@ void processCommand(String cmd) {
   cmd.trim();
 
   // Mouse Jiggler control
-  if (cmd == "JIGGLE_ON") {
+  if (cmd.startsWith("JIGGLE_ON")) {
+    // Parse parameters: JIGGLE_ON <type> <diameter> <delay>
+    // Example: JIGGLE_ON circles 5 3000
+    int firstSpace = cmd.indexOf(' ');
+    if (firstSpace > 0) {
+      int secondSpace = cmd.indexOf(' ', firstSpace + 1);
+      int thirdSpace = cmd.indexOf(' ', secondSpace + 1);
+
+      if (secondSpace > 0 && thirdSpace > 0) {
+        String type = cmd.substring(firstSpace + 1, secondSpace);
+        int diameter = cmd.substring(secondSpace + 1, thirdSpace).toInt();
+        unsigned long delay = cmd.substring(thirdSpace + 1).toInt();
+
+        // Validate and apply settings
+        type.toLowerCase();
+        if (type == "simple" || type == "circles" || type == "random") {
+          jiggleType = type;
+          jiggleAngle = 0; // Reset angle for circles
+        }
+
+        if (diameter > 0 && diameter <= 100) {
+          jiggleDiameter = diameter;
+        }
+
+        if (delay >= 100 && delay <= 60000) {
+          jiggleInterval = delay;
+        }
+      }
+    }
+
     jigglerEnabled = true;
     lastJiggleTime = millis();
-    Serial1.println("OK:Jiggler enabled");
+    Serial1.println("OK:Jiggler enabled (type=" + jiggleType + ", diameter=" + String(jiggleDiameter) + ", delay=" + String(jiggleInterval) + ")");
     blinkLED(2, 100);
   }
   else if (cmd == "JIGGLE_OFF") {
     jigglerEnabled = false;
     Serial1.println("OK:Jiggler disabled");
     digitalWrite(LED_PIN, LOW);
-  }
-  else if (cmd.startsWith("JIGGLE_DIAMETER:")) {
-    int diameter = cmd.substring(16).toInt();
-    if (diameter > 0 && diameter <= 100) { // Limit to reasonable values
-      jiggleDiameter = diameter;
-      Serial1.println("OK:Jiggle diameter set to " + String(diameter));
-    } else {
-      Serial1.println("ERROR:Invalid diameter");
-    }
-  }
-  else if (cmd.startsWith("JIGGLE_TYPE:")) {
-    String type = cmd.substring(12);
-    type.toLowerCase();
-    if (type == "simple" || type == "circles" || type == "random") {
-      jiggleType = type;
-      jiggleAngle = 0; // Reset angle for circles
-      Serial1.println("OK:Jiggle type set to " + type);
-    } else {
-      Serial1.println("ERROR:Invalid jiggle type");
-    }
-  }
-  else if (cmd.startsWith("JIGGLE_DELAY:")) {
-    unsigned long delay = cmd.substring(13).toInt();
-    if (delay >= 100 && delay <= 60000) { // Between 100ms and 60 seconds
-      jiggleInterval = delay;
-      Serial1.println("OK:Jiggle delay set to " + String(delay) + "ms");
-    } else {
-      Serial1.println("ERROR:Invalid delay");
-    }
   }
 
   // Type commands

@@ -37,54 +37,37 @@ let jigglerEnabled = false;
       if (jigglerEnabled) {
         toggle.classList.add('active');
         status.textContent = 'Enabled';
+
+        // Get all jiggler parameters
+        const type = document.getElementById('jigglerType').value;
+        const diameter = document.getElementById('jigglerDiameter').value;
+        const delay = document.getElementById('jigglerDelay').value;
+
+        // Send enable command with all parameters
+        fetch('/api/jiggler?enable=1&type=' + encodeURIComponent(type) +
+              '&diameter=' + encodeURIComponent(diameter) +
+              '&delay=' + encodeURIComponent(delay))
+          .then(response => response.json())
+          .then(data => {
+            log('Mouse jiggler enabled (type: ' + type + ', diameter: ' + diameter + 'px, delay: ' + delay + 'ms)');
+          })
+          .catch(error => {
+            log('Error enabling jiggler: ' + error);
+          });
       } else {
         toggle.classList.remove('active');
         status.textContent = 'Disabled';
+
+        // Send disable command
+        fetch('/api/jiggler?enable=0')
+          .then(response => response.json())
+          .then(data => {
+            log('Mouse jiggler disabled');
+          })
+          .catch(error => {
+            log('Error disabling jiggler: ' + error);
+          });
       }
-
-      fetch('/api/jiggler?enable=' + (jigglerEnabled ? '1' : '0'))
-        .then(response => response.json())
-        .then(data => {
-          log('Mouse jiggler ' + (jigglerEnabled ? 'enabled' : 'disabled'));
-        });
-    }
-
-    function updateJigglerType() {
-      const type = document.getElementById('jigglerType').value;
-      fetch('/api/jiggler?type=' + encodeURIComponent(type))
-        .then(response => response.json())
-        .then(data => {
-          log('Jiggler type set to: ' + type);
-        })
-        .catch(error => {
-          log('Error setting jiggler type: ' + error);
-        });
-    }
-
-    function updateJigglerDiameter() {
-      const diameter = document.getElementById('jigglerDiameter').value;
-      document.getElementById('diameterValue').textContent = diameter;
-      fetch('/api/jiggler?diameter=' + diameter)
-        .then(response => response.json())
-        .then(data => {
-          log('Jiggler diameter set to: ' + diameter + ' pixels');
-        })
-        .catch(error => {
-          log('Error setting jiggler diameter: ' + error);
-        });
-    }
-
-    function updateJigglerDelay() {
-      const delay = document.getElementById('jigglerDelay').value;
-      document.getElementById('delayValue').textContent = delay;
-      fetch('/api/jiggler?delay=' + delay)
-        .then(response => response.json())
-        .then(data => {
-          log('Jiggler delay set to: ' + delay + ' ms');
-        })
-        .catch(error => {
-          log('Error setting jiggler delay: ' + error);
-        });
     }
 
     function typeText() {

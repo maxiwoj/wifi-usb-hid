@@ -233,7 +233,14 @@ void handleJiggler() {
   if (SERVER_HAS_ARG("enable")) {
     String enable = SERVER_ARG("enable");
     if (enable == "1") {
-      sendCommandToProMicro("JIGGLE_ON");
+      // Get jiggler parameters (with defaults if not provided)
+      String type = SERVER_HAS_ARG("type") ? SERVER_ARG("type") : "simple";
+      String diameter = SERVER_HAS_ARG("diameter") ? SERVER_ARG("diameter") : "2";
+      String delay = SERVER_HAS_ARG("delay") ? SERVER_ARG("delay") : "2000";
+
+      // Send command with all parameters: JIGGLE_ON <type> <diameter> <delay>
+      String command = "JIGGLE_ON " + type + " " + diameter + " " + delay;
+      sendCommandToProMicro(command);
       displayAction("Jiggler ON");
       SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":true}");
     } else {
@@ -241,23 +248,8 @@ void handleJiggler() {
       displayAction("Jiggler OFF");
       SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
     }
-  } else if (SERVER_HAS_ARG("diameter")) {
-    String diameter = SERVER_ARG("diameter");
-    sendCommandToProMicro("JIGGLE_DIAMETER:" + diameter);
-    displayAction("Jiggle diameter: " + diameter);
-    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"diameter\":" + diameter + "}");
-  } else if (SERVER_HAS_ARG("type")) {
-    String type = SERVER_ARG("type");
-    sendCommandToProMicro("JIGGLE_TYPE:" + type);
-    displayAction("Jiggle type: " + type);
-    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"type\":\"" + type + "\"}");
-  } else if (SERVER_HAS_ARG("delay")) {
-    String delay = SERVER_ARG("delay");
-    sendCommandToProMicro("JIGGLE_DELAY:" + delay);
-    displayAction("Jiggle delay: " + delay + "ms");
-    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"delay\":" + delay + "}");
   } else {
-    SERVER_SEND(400, "application/json", "{status:error,message:Missing parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing enable parameter}");
   }
 }
 
