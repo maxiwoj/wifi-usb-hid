@@ -225,6 +225,22 @@
       margin: 0;
     }
 
+    .script-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-header-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     @media (max-width: 768px) {
       .button-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -232,5 +248,60 @@
 
       .trackpad {
         height: 250px;
+      }
+
+      .script-controls {
+        flex-direction: column;
+      }
+
+      .script-controls input[type="text"] {
+        width: 100%;
+        flex: none;
+        margin-bottom: 10px;
+      }
+
+      .script-controls .btn {
+        width: 100%;
+        margin: 0 0 5px 0;
+      }
+
+      .card-header-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .card-header-controls h2 {
+        margin-bottom: 10px !important;
+      }
+
+      .card-header-controls .btn {
+        width: 100%;
+        margin: 0;
+      }
+
+      .sensitivity-control {
+        flex-wrap: wrap;
+      }
+
+      .sensitivity-control label {
+        width: 100%;
+        min-width: unset;
+        margin-bottom: 5px;
+      }
+
+      .sensitivity-control input[type="range"] {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      .sensitivity-control span {
+        min-width: 50px;
+        text-align: right;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .button-grid {
+        grid-template-columns: 1fr;
       }
     }
