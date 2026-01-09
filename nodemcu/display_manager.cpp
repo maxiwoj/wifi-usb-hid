@@ -21,22 +21,22 @@ void showStartupLogo() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
-  // Large title - better centered
+  // Large title - centered (8 chars * 12px = 96px, (128-96)/2 = 16)
   display.setTextSize(2);
-  display.setCursor(22, 8);
+  display.setCursor(16, 8);
   display.println("WiFi HID");
 
-  // Decorative separator - centered
+  // Decorative separator - centered (9 chars * 6px = 54px, (128-54)/2 = 37)
   display.setTextSize(1);
-  display.setCursor(34, 28);
+  display.setCursor(37, 28);
   display.println("=========");
 
-  // Subtitle - centered
-  display.setCursor(28, 42);
+  // Subtitle - centered (11 chars * 6px = 66px, (128-66)/2 = 31)
+  display.setCursor(31, 42);
   display.println("USB Control");
 
-  // Status - centered
-  display.setCursor(30, 54);
+  // Status - centered (11 chars * 6px = 66px, (128-66)/2 = 31)
+  display.setCursor(31, 54);
   display.println("Starting...");
 
   display.display();
@@ -158,7 +158,10 @@ void updateDisplayStatus() {
 
   // Web Authentication - no label, just credentials
   display.print(WEB_AUTH_USER);
+  // Use inverse color for separator to distinguish username/password
+  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
   display.print("/");
+  display.setTextColor(SSD1306_WHITE);
   display.println(WEB_AUTH_PASS);
 
   // Blank line for separation
