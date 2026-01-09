@@ -16,6 +16,32 @@ unsigned long lastActionTime = 0;
 extern bool isAPMode;
 extern String currentSSID;
 
+// Internal function to show startup logo
+void showStartupLogo() {
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  // Large title - better centered
+  display.setTextSize(2);
+  display.setCursor(22, 8);
+  display.println("WiFi HID");
+
+  // Decorative separator - centered
+  display.setTextSize(1);
+  display.setCursor(34, 28);
+  display.println("=========");
+
+  // Subtitle - centered
+  display.setCursor(28, 42);
+  display.println("USB Control");
+
+  // Status - centered
+  display.setCursor(30, 54);
+  display.println("Starting...");
+
+  display.display();
+  delay(1500);
+}
 
 void setupDisplay() {
     // Initialize I2C for OLED display
@@ -61,92 +87,26 @@ void setupDisplay() {
   } else {
     // I2C device found, try to initialize
     if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-      Serial.println("Display library initialized - testing display...");
-
-      // Test if display actually works
-      display.clearDisplay();
-      display.setTextSize(2);
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0, 0);
-      display.println("WiFi USB HID Control");
-      display.setTextSize(1);
-      display.println("If you see this,");
-      display.println("the display works!");
-      display.display();
+      Serial.println("Display library initialized - showing startup logo...");
 
       displayAvailable = true;
       Serial.println("OLED display is working!");
-      delay(2000);
 
       // Show formatted startup logo
-      display.clearDisplay();
-      display.setTextColor(SSD1306_WHITE);
-
-      // Large title
-      display.setTextSize(2);
-      display.setCursor(10, 8);
-      display.println("WiFi HID");
-
-      // Decorative separator
-      display.setTextSize(1);
-      display.setCursor(20, 28);
-      display.println("===========");
-
-      // Subtitle
-      display.setCursor(15, 42);
-      display.println("USB Control");
-
-      // Status
-      display.setCursor(20, 54);
-      display.println("Starting...");
-
-      display.display();
-      delay(1500);
+      showStartupLogo();
     } else {
       Serial.println("Display initialization failed at 0x3C");
 
       // Try alternative address 0x3D
       Serial.println("Trying alternative address 0x3D...");
       if (display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
-        Serial.println("Display library initialized at 0x3D - testing...");
-
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(SSD1306_WHITE);
-        display.setCursor(0, 0);
-        display.println("TESTING");
-        display.setTextSize(1);
-        display.println("Display @ 0x3D");
-        display.display();
+        Serial.println("Display library initialized at 0x3D - showing startup logo...");
 
         displayAvailable = true;
         Serial.println("OLED display working at 0x3D!");
-        delay(2000);
 
         // Show formatted startup logo
-        display.clearDisplay();
-        display.setTextColor(SSD1306_WHITE);
-
-        // Large title
-        display.setTextSize(2);
-        display.setCursor(10, 8);
-        display.println("WiFi HID");
-
-        // Decorative separator
-        display.setTextSize(1);
-        display.setCursor(20, 28);
-        display.println("===========");
-
-        // Subtitle
-        display.setCursor(15, 42);
-        display.println("USB Control");
-
-        // Status
-        display.setCursor(20, 54);
-        display.println("Starting...");
-
-        display.display();
-        delay(1500);
+        showStartupLogo();
       } else {
         Serial.println("Display not found at 0x3C or 0x3D");
         displayAvailable = false;
@@ -177,8 +137,9 @@ void updateDisplayStatus() {
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
 
-  // Title - compact
+  // Title
   display.println("WiFi HID Control");
+  display.println("----------------");
 
   // Mode and IP on same line - saves space
   if (isAPMode) {
@@ -195,17 +156,10 @@ void updateDisplayStatus() {
     // Don't show password in station mode to save space
   }
 
-  // Web Authentication - compact format
-  display.print("Web:");
+  // Web Authentication - no label, just credentials
   display.print(WEB_AUTH_USER);
   display.print("/");
-  // Truncate password if too long
-  String webPass = String(WEB_AUTH_PASS);
-  if (webPass.length() > 12) {
-    display.println(webPass.substring(0, 12) + "...");
-  } else {
-    display.println(webPass);
-  }
+  display.println(WEB_AUTH_PASS);
 
   // Blank line for separation
   display.println();
