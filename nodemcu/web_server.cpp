@@ -241,8 +241,23 @@ void handleJiggler() {
       displayAction("Jiggler OFF");
       SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"enabled\":false}");
     }
+  } else if (SERVER_HAS_ARG("diameter")) {
+    String diameter = SERVER_ARG("diameter");
+    sendCommandToProMicro("JIGGLE_DIAMETER:" + diameter);
+    displayAction("Jiggle diameter: " + diameter);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"diameter\":" + diameter + "}");
+  } else if (SERVER_HAS_ARG("type")) {
+    String type = SERVER_ARG("type");
+    sendCommandToProMicro("JIGGLE_TYPE:" + type);
+    displayAction("Jiggle type: " + type);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"type\":\"" + type + "\"}");
+  } else if (SERVER_HAS_ARG("delay")) {
+    String delay = SERVER_ARG("delay");
+    sendCommandToProMicro("JIGGLE_DELAY:" + delay);
+    displayAction("Jiggle delay: " + delay + "ms");
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"delay\":" + delay + "}");
   } else {
-    SERVER_SEND(400, "application/json", "{status:error,message:Missing enable parameter}");
+    SERVER_SEND(400, "application/json", "{status:error,message:Missing parameter}");
   }
 }
 
