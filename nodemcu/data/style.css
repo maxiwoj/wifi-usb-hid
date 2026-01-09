@@ -299,3 +299,9 @@
         text-align: right;
       }
     }
+
+    @media (max-width: 480px) {
+      .button-grid {
+        grid-template-columns: 1fr;
+      }
+    }
