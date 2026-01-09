@@ -27,9 +27,6 @@ String loadQuickScripts(String os);
 bool deleteQuickScript(String os, String id);
 bool deleteAllQuickScripts(String os);
 
-// Initialize default quick actions
-void initializeDefaultQuickActions();
-
 extern bool littlefsAvailable;
 
 #endif //LITTLEFS_MANAGER_H

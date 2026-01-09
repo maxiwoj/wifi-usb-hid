@@ -654,15 +654,3 @@ bool deleteAllQuickScripts(String os) {
 
   return false;
 }
-
-// Initialize Default Quick Actions
-void initializeDefaultQuickActions() {
-  // This function is now deprecated - default quick actions are loaded from
-  // data files (quickactions_Windows.txt, quickactions_MacOS.txt, quickactions_Linux.txt)
-  // that are uploaded to LittleFS using the "Upload Filesystem Image" tool.
-  //
-  // The files are created in the data/ folder and uploaded alongside HTML/CSS/JS files.
-  // No code-based initialization needed anymore.
-
-  Serial.println("Quick actions will be loaded from LittleFS data files");
-}
