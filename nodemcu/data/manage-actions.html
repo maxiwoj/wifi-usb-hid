@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Quick Actions - WiFi USB HID</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Manage Quick Actions</h1>
+        <p style="color: #6b7280; margin-top: 5px;">Create, edit, and delete quick action buttons for any operating system</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-info" onclick="location.href='/'">Back to Home</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Select Operating System</h2>
+      <select id="osManagerSelect" onchange="loadQuickActionsManager()">
+        <option value="Windows">Windows</option>
+        <option value="MacOS">MacOS</option>
+        <option value="Linux">Linux</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Add Quick Action</h2>
+      <div style="display: grid; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Command:</label>
+          <input type="text" id="quickActionCmd" placeholder="e.g., GUI_A, CTRL_C, ALT_TAB">
+          <p style="font-size: 12px; color: #6b7280; margin: 5px 0 0 0;">
+            Use DuckyScript commands like GUI, CTRL, ALT, SHIFT with underscores (e.g., CTRL_ALT_DELETE)
+          </p>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Label:</label>
+          <input type="text" id="quickActionLabel" placeholder="e.g., Select All, Copy, Paste">
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Description (Optional):</label>
+          <input type="text" id="quickActionDesc" placeholder="e.g., Select all text in current window">
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Color:</label>
+          <select id="quickActionClass">
+            <option value="btn-primary">Primary (Purple)</option>
+            <option value="btn-success">Success (Green)</option>
+            <option value="btn-warning">Warning (Orange)</option>
+            <option value="btn-info">Info (Blue)</option>
+            <option value="btn-danger">Danger (Red)</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="saveQuickAction()">Add Quick Action</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Actions List</h2>
+      <p style="color: #6b7280; margin-bottom: 15px;">All quick actions for <strong id="currentOSName">Windows</strong></p>
+      <div id="quickActionsManager" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">Loading...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Override loadQuickActionsManager to add reorder buttons
+    function loadQuickActionsManager() {
+      const managerDiv = document.getElementById('quickActionsManager');
+      if (!managerDiv) return;
+
+      const os = document.getElementById('osManagerSelect').value;
+      managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(actions => {
+          if (actions.length === 0) {
+            managerDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick actions for this OS. Add one above.</p>';
+            return;
+          }
+
+          managerDiv.innerHTML = '';
+          actions.forEach((action, index) => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+            item.setAttribute('data-cmd', action.cmd);
+
+            const infoDiv = document.createElement('div');
+            infoDiv.innerHTML = '<strong>' + action.label + '</strong><br><small style="color: #6b7280;">' + action.cmd + ' - ' + action.desc + '</small>';
+
+            const btnGroup = document.createElement('div');
+            btnGroup.style.cssText = 'display: flex; gap: 5px;';
+
+            // Up button
+            if (index > 0) {
+              const upBtn = document.createElement('button');
+              upBtn.className = 'btn btn-info';
+              upBtn.textContent = '↑';
+              upBtn.style.cssText = 'padding: 5px 10px; font-size: 16px;';
+              upBtn.onclick = function() { moveAction(os, index, index - 1); };
+              btnGroup.appendChild(upBtn);
+            }
+
+            // Down button
+            if (index < actions.length - 1) {
+              const downBtn = document.createElement('button');
+              downBtn.className = 'btn btn-info';
+              downBtn.textContent = '↓';
+              downBtn.style.cssText = 'padding: 5px 10px; font-size: 16px;';
+              downBtn.onclick = function() { moveAction(os, index, index + 1); };
+              btnGroup.appendChild(downBtn);
+            }
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            deleteBtn.onclick = function() { deleteQuickAction(os, action.cmd); };
+            btnGroup.appendChild(deleteBtn);
+
+            item.appendChild(infoDiv);
+            item.appendChild(btnGroup);
+            managerDiv.appendChild(item);
+          });
+
+          // Store actions array for reordering
+          managerDiv.setAttribute('data-actions', JSON.stringify(actions));
+        })
+        .catch(error => {
+          managerDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick actions: ' + error + '</p>';
+        });
+    }
+
+    function moveAction(os, fromIndex, toIndex) {
+      const managerDiv = document.getElementById('quickActionsManager');
+      const actionsData = managerDiv.getAttribute('data-actions');
+      if (!actionsData) return;
+
+      const actions = JSON.parse(actionsData);
+
+      // Swap positions
+      const temp = actions[fromIndex];
+      actions[fromIndex] = actions[toIndex];
+      actions[toIndex] = temp;
+
+      // Send reorder request
+      const order = actions.map(a => a.cmd).join(',');
+
+      fetch('/api/quickactions/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) + '&order=' + encodeURIComponent(order)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick action reordered');
+          loadQuickActionsManager();
+          updateQuickActions();
+        } else {
+          log('Error: ' + (data.message || 'Failed to reorder'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    // Initialize the management page
+    (function() {
+      log('Quick Actions Manager loaded');
+      loadCustomOS();
+      loadQuickActionsManager();
+
+      // Update OS name display
+      document.getElementById('osManagerSelect').addEventListener('change', function() {
+        document.getElementById('currentOSName').textContent = this.value;
+      });
+    })();
+  </script>
+</body>
+</html>

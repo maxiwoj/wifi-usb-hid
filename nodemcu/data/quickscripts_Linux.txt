@@ -1,0 +1,4 @@
+editor|Open Editor|CTRL ALT T\nDELAY 1000\nSTRING gedit\nENTER|btn-primary
+terminal|Terminal|CTRL ALT T|btn-success
+calculator|Calculator|GUI\nDELAY 500\nSTRING calc\nENTER|btn-warning
+browser|Browser|GUI\nDELAY 500\nSTRING firefox\nENTER|btn-info

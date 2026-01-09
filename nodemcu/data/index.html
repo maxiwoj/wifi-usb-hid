@@ -25,11 +25,14 @@
 
     <div class="card">
       <h2>OS Selection</h2>
-      <select id="osSelect">
-        <option value="Windows">Windows</option>
-        <option value="MacOS">MacOS</option>
-        <option value="Linux">Linux</option>
-      </select>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <select id="osSelect" style="flex: 1;">
+          <option value="Windows">Windows</option>
+          <option value="MacOS">MacOS</option>
+          <option value="Linux">Linux</option>
+        </select>
+        <button class="btn btn-primary" onclick="location.href='manage-os.html'" style="white-space: nowrap;">Manage OS</button>
+      </div>
     </div>
 
     <div class="card">
@@ -41,7 +44,10 @@
     </div>
 
     <div class="card">
-      <h2>Quick Actions</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Quick Actions</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 8px 16px; font-size: 14px;">Manage Actions</button>
+      </div>
       <div class="button-grid" id="quickActions">
         <!-- Buttons will be dynamically generated based on OS selection -->
       </div>
@@ -52,6 +58,7 @@
       <input type="text" id="typeText" placeholder="Enter text to type...">
       <button class="btn btn-primary" onclick="typeText()">Type</button>
       <button class="btn btn-success" onclick="typeTextEnter()">Type + Enter</button>
+      <button class="btn btn-warning" onclick="sendCommand('BACKSPACE')">Backspace</button>
     </div>
 
     <div class="card">
@@ -69,32 +76,36 @@
         <span id="sensitivityValue">1.5x</span>
       </div>
 
-      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
-      <div class="mouse-grid">
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,-10')">↖</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,-10')">↑</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,-10')">↗</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,0')">←</button>
-        <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Click</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,0')">→</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,10')">↙</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,10')">↓</button>
-        <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,10')">↘</button>
-      </div>
-      <div style="margin-top: 10px;">
-        <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Left Click</button>
-        <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
-        <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
+      <button class="btn btn-info" id="toggleDirectionalBtn" onclick="toggleDirectionalControls()" style="margin: 15px 0 10px 0; width: 100%;">▶ Show Directional Controls</button>
+
+      <div id="directionalControls" style="display: none;">
+        <h3 style="margin: 10px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
+        <div class="mouse-grid">
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,-10')">↖</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,-10')">↑</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,-10')">↗</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,0')">←</button>
+          <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Click</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,0')">→</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,10')">↙</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,10')">↓</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,10')">↘</button>
+        </div>
+        <div style="margin-top: 10px;">
+          <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Left Click</button>
+          <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
+          <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Quick Scripts</h2>
-      <div class="button-grid">
-        <button class="btn btn-primary" onclick="runQuickScript('editor')">Open Editor</button>
-        <button class="btn btn-success" onclick="runQuickScript('terminal')">Terminal</button>
-        <button class="btn btn-warning" onclick="runQuickScript('calculator')">Calculator</button>
-        <button class="btn btn-info" onclick="runQuickScript('browser')">Browser</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Quick Scripts</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-scripts.html'" style="padding: 8px 16px; font-size: 14px;">Manage Scripts</button>
+      </div>
+      <div class="button-grid" id="quickScripts">
+        <!-- Buttons will be dynamically generated based on OS selection -->
       </div>
     </div>
 

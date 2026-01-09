@@ -10,6 +10,22 @@ bool deleteScriptFile(String name);
 String getScriptNameFromFilename(String filename);
 String getScriptFilename(String name);
 
+// Quick actions management
+bool saveQuickAction(String os, String cmd, String label, String desc, String btnClass);
+String loadQuickActions(String os);
+bool deleteQuickAction(String os, String cmd);
+bool deleteAllQuickActions(String os);
+
+// Custom OS management
+bool addCustomOS(String osName);
+bool deleteCustomOS(String osName);
+String loadCustomOSList();
+
+// Quick scripts management
+bool saveQuickScript(String os, String id, String label, String script, String btnClass);
+String loadQuickScripts(String os);
+bool deleteQuickScript(String os, String id);
+bool deleteAllQuickScripts(String os);
 
 extern bool littlefsAvailable;
 

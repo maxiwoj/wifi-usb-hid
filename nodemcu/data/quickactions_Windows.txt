@@ -1,0 +1,8 @@
+GUI_R|Win+R|Run Dialog|btn-primary
+GUI_SPACE|Win+Space|Input Switch|btn-primary
+GUI_D|Win+D|Show Desktop|btn-primary
+ALT_TAB|Alt+Tab|Switch Apps|btn-primary
+ENTER|Enter|Enter|btn-success
+ESC|Escape|Escape|btn-warning
+BACKSPACE|Backspace|Backspace|btn-warning
+TAB|Tab|Tab|btn-info

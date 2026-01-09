@@ -65,33 +65,41 @@ let jigglerEnabled = false;
       }
     }
 
-    function runQuickScript(scriptName) {
-      const os = document.getElementById('osSelect').value;
-      const scripts = {
-        'Windows': {
-          'editor': 'GUI r\nDELAY 500\nSTRING notepad\nENTER',
-          'terminal': 'GUI r\nDELAY 500\nSTRING cmd\nENTER',
-          'calculator': 'GUI r\nDELAY 500\nSTRING calc\nENTER',
-          'browser': 'GUI r\nDELAY 500\nSTRING chrome\nENTER'
-        },
-        'MacOS': {
-          'editor': 'GUI SPACE\nDELAY 500\nSTRING textedit\nENTER',
-          'terminal': 'GUI SPACE\nDELAY 500\nSTRING terminal\nENTER',
-          'calculator': 'GUI SPACE\nDELAY 500\nSTRING calculator\nENTER',
-          'browser': 'GUI SPACE\nDELAY 500\nSTRING safari\nENTER'
-        },
-        'Linux': {
-          'editor': 'CTRL ALT T\nDELAY 1000\nSTRING gedit\nENTER',
-          'terminal': 'CTRL ALT T',
-          'calculator': 'GUI\nDELAY 500\nSTRING calc\nENTER',
-          'browser': 'GUI\nDELAY 500\nSTRING firefox\nENTER'
-        }
-      };
+    function runQuickScript(scriptId, script) {
+      executeScriptText(script);
+      log('Running quick script: ' + scriptId);
+    }
 
-      const script = scripts[os][scriptName];
-      if (script) {
-        executeScriptText(script);
-      }
+    function loadQuickScripts() {
+      const os = document.getElementById('osSelect').value;
+      const quickScriptsDiv = document.getElementById('quickScripts');
+
+      if (!quickScriptsDiv) return; // Not on main page
+
+      quickScriptsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(scripts => {
+          quickScriptsDiv.innerHTML = '';
+
+          if (scripts.length === 0) {
+            quickScriptsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick scripts for this OS. Add some in <a href="manage-scripts.html" style="color: #667eea;">Manage Scripts</a>.</p>';
+            return;
+          }
+
+          scripts.forEach(script => {
+            const button = document.createElement('button');
+            button.className = 'btn ' + script.class;
+            button.setAttribute('onclick', "runQuickScript('" + script.id + "', `" + script.script.replace(/`/g, '\\`') + "`)");
+            button.textContent = script.label;
+            quickScriptsDiv.appendChild(button);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading quick scripts:', error);
+          quickScriptsDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick scripts. Please refresh the page.</p>';
+        });
     }
 
     function executeScript() {
@@ -117,48 +125,32 @@ let jigglerEnabled = false;
     function updateQuickActions() {
       const os = document.getElementById('osSelect').value;
       const quickActionsDiv = document.getElementById('quickActions');
-      quickActionsDiv.innerHTML = '';
+      quickActionsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      const actions = {
-        'Windows': [
-          { cmd: 'GUI_R', label: 'Win+R', desc: 'Run Dialog', class: 'btn-primary' },
-          { cmd: 'GUI_SPACE', label: 'Win+Space', desc: 'Input Switch', class: 'btn-primary' },
-          { cmd: 'GUI_D', label: 'Win+D', desc: 'Show Desktop', class: 'btn-primary' },
-          { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-        ],
-        'MacOS': [
-          { cmd: 'GUI_SPACE', label: '⌘+Space', desc: 'Spotlight', class: 'btn-primary' },
-          { cmd: 'GUI_TAB', label: '⌘+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-          { cmd: 'GUI_D', label: '⌘+D', desc: 'Show Desktop', class: 'btn-primary' },
-          { cmd: 'GUI_H', label: '⌘+H', desc: 'Hide App', class: 'btn-primary' },
-          { cmd: 'GUI_W', label: '⌘+W', desc: 'Close Window', class: 'btn-primary' },
-          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-        ],
-        'Linux': [
-          { cmd: 'GUI', label: 'Super', desc: 'Super Key', class: 'btn-primary' },
-          { cmd: 'GUI_SPACE', label: 'Super+Space', desc: 'App Launcher', class: 'btn-primary' },
-          { cmd: 'ALT_TAB', label: 'Alt+Tab', desc: 'Switch Apps', class: 'btn-primary' },
-          { cmd: 'CTRL_ALT_T', label: 'Ctrl+Alt+T', desc: 'Terminal', class: 'btn-primary' },
-          { cmd: 'ENTER', label: 'Enter', desc: 'Enter', class: 'btn-success' },
-          { cmd: 'ESC', label: 'Escape', desc: 'Escape', class: 'btn-warning' },
-          { cmd: 'TAB', label: 'Tab', desc: 'Tab', class: 'btn-info' }
-        ]
-      };
+      // Load all actions for this OS from storage
+      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(actions => {
+          quickActionsDiv.innerHTML = '';
 
-      const osActions = actions[os] || actions['Windows'];
-      osActions.forEach(action => {
-        const button = document.createElement('button');
-        button.className = 'btn ' + action.class;
-        button.setAttribute('onclick', "sendCommand('" + action.cmd + "')");
-        button.setAttribute('title', action.desc);
-        button.textContent = action.label;
-        quickActionsDiv.appendChild(button);
-      });
+          if (actions.length === 0) {
+            quickActionsDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick actions for this OS. Add some in <a href="manage-actions.html" style="color: #667eea;">Manage Actions</a>.</p>';
+            return;
+          }
+
+          actions.forEach(action => {
+            const button = document.createElement('button');
+            button.className = 'btn ' + action.class;
+            button.setAttribute('onclick', "sendCommand('" + action.cmd + "')");
+            button.setAttribute('title', action.desc);
+            button.textContent = action.label;
+            quickActionsDiv.appendChild(button);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading quick actions:', error);
+          quickActionsDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick actions. Please refresh the page.</p>';
+        });
     }
 
     // Script Management Functions
@@ -538,11 +530,261 @@ let jigglerEnabled = false;
       updateSensitivityDisplay();
     })();
 
-    // Update Quick Actions when OS selection changes
-    document.getElementById('osSelect').addEventListener('change', updateQuickActions);
+    // Custom OS Management Functions
+    function loadCustomOS() {
+      fetch('/api/customos')
+        .then(response => response.json())
+        .then(customOSList => {
+          const osSelect = document.getElementById('osSelect');
+          const osManagerSelect = document.getElementById('osManagerSelect');
+
+          // Remove any previously added custom OS options from both dropdowns
+          [osSelect, osManagerSelect].forEach(select => {
+            if (select) {
+              const options = select.querySelectorAll('option');
+              options.forEach(option => {
+                if (option.value !== 'Windows' && option.value !== 'MacOS' && option.value !== 'Linux') {
+                  option.remove();
+                }
+              });
+
+              // Add custom OS to dropdown
+              customOSList.forEach(osName => {
+                const option = document.createElement('option');
+                option.value = osName;
+                option.textContent = osName;
+                select.appendChild(option);
+              });
+            }
+          });
+
+          // Update the custom OS list display
+          displayCustomOSList(customOSList);
+        })
+        .catch(error => {
+          console.error('Error loading custom OS:', error);
+        });
+    }
+
+    function displayCustomOSList(customOSList) {
+      const listDiv = document.getElementById('customOSList');
+      if (!listDiv) return;
+
+      // Check if we have a manage page version
+      if (typeof displayCustomOSListOnManagePage === 'function') {
+        displayCustomOSListOnManagePage(customOSList);
+        return;
+      }
+
+      if (customOSList.length === 0) {
+        listDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No custom operating systems.</p>';
+        return;
+      }
+
+      listDiv.innerHTML = '';
+      customOSList.forEach(osName => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = osName;
+        nameSpan.style.fontWeight = '600';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+        deleteBtn.onclick = function() { deleteCustomOS(osName); };
+
+        item.appendChild(nameSpan);
+        item.appendChild(deleteBtn);
+        listDiv.appendChild(item);
+      });
+    }
+
+    function addCustomOS() {
+      const osName = prompt('Enter new operating system name:');
+      if (!osName || osName.trim() === '') {
+        return;
+      }
+
+      fetch('/api/customos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(osName.trim())
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Custom OS added: ' + osName);
+          loadCustomOS();
+          loadQuickActionsManager();
+        } else {
+          log('Error: ' + (data.message || 'Failed to add custom OS'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function deleteCustomOS(osName) {
+      if (!confirm('Delete custom OS "' + osName + '" and all its quick actions?')) {
+        return;
+      }
+
+      fetch('/api/customos/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'name=' + encodeURIComponent(osName)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Custom OS deleted: ' + osName);
+          loadCustomOS();
+          loadQuickActionsManager();
+        } else {
+          log('Error: ' + (data.message || 'Failed to delete custom OS'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    // Quick Actions Management Functions
+    function loadQuickActionsManager() {
+      const managerDiv = document.getElementById('quickActionsManager');
+      if (!managerDiv) return;
+
+      const os = document.getElementById('osManagerSelect').value;
+      managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(actions => {
+          if (actions.length === 0) {
+            managerDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No custom quick actions for this OS.</p>';
+            return;
+          }
+
+          managerDiv.innerHTML = '';
+          actions.forEach(action => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+
+            const infoDiv = document.createElement('div');
+            infoDiv.innerHTML = '<strong>' + action.label + '</strong><br><small style="color: #6b7280;">' + action.cmd + ' - ' + action.desc + '</small>';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            deleteBtn.onclick = function() { deleteQuickAction(os, action.cmd); };
+
+            item.appendChild(infoDiv);
+            item.appendChild(deleteBtn);
+            managerDiv.appendChild(item);
+          });
+        })
+        .catch(error => {
+          managerDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick actions: ' + error + '</p>';
+        });
+    }
+
+    function saveQuickAction() {
+      const os = document.getElementById('osManagerSelect').value;
+      const cmd = document.getElementById('quickActionCmd').value.trim();
+      const label = document.getElementById('quickActionLabel').value.trim();
+      const desc = document.getElementById('quickActionDesc').value.trim();
+      const btnClass = document.getElementById('quickActionClass').value;
+
+      if (!cmd || !label) {
+        log('Error: Command and label are required');
+        return;
+      }
+
+      fetch('/api/quickactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) +
+              '&cmd=' + encodeURIComponent(cmd) +
+              '&label=' + encodeURIComponent(label) +
+              '&desc=' + encodeURIComponent(desc) +
+              '&class=' + encodeURIComponent(btnClass)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick action saved');
+          document.getElementById('quickActionCmd').value = '';
+          document.getElementById('quickActionLabel').value = '';
+          document.getElementById('quickActionDesc').value = '';
+          loadQuickActionsManager();
+          updateQuickActions();
+        } else {
+          log('Error: ' + (data.message || 'Failed to save quick action'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function deleteQuickAction(os, cmd) {
+      if (!confirm('Delete this quick action?')) {
+        return;
+      }
+
+      fetch('/api/quickactions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) + '&cmd=' + encodeURIComponent(cmd)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick action deleted');
+          loadQuickActionsManager();
+          updateQuickActions();
+        } else {
+          log('Error: ' + (data.message || 'Failed to delete quick action'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function toggleDirectionalControls() {
+      const controls = document.getElementById('directionalControls');
+      const button = document.getElementById('toggleDirectionalBtn');
+
+      if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        button.textContent = '▼ Hide Directional Controls';
+      } else {
+        controls.style.display = 'none';
+        button.textContent = '▶ Show Directional Controls';
+      }
+    }
+
+    // Update Quick Actions and Quick Scripts when OS selection changes
+    document.getElementById('osSelect').addEventListener('change', function() {
+      updateQuickActions();
+      loadQuickScripts();
+    });
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
+    loadCustomOS();
     updateQuickActions();
+    loadQuickScripts();
     loadSavedScripts();
     loadDeviceStatus();
+
+    // Load quick actions manager if the element exists
+    if (document.getElementById('quickActionsManager')) {
+      loadQuickActionsManager();
+    }
