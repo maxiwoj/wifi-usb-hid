@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 void setupWebServer();
+bool checkAuthentication();
 void handleRoot();
 void handleSetup();
 void handleCSS();

@@ -2,6 +2,16 @@
 
 REST API reference and command protocol for WiFi USB HID Control.
 
+## Authentication
+
+All API endpoints and web pages require HTTP Basic Authentication.
+
+**Default Credentials:**
+- Username: `admin`
+- Password: `HID_Admin2024!`
+
+You can change these credentials in `nodemcu/config.h` (WEB_AUTH_USER and WEB_AUTH_PASS).
+
 ## REST API Endpoints
 
 Base URL: `http://<device-ip>` or `http://192.168.4.1` (AP mode)
@@ -18,9 +28,9 @@ Base URL: `http://<device-ip>` or `http://192.168.4.1` (AP mode)
 Send a command to Pro Micro. Parameter: `cmd` (required)
 
 ```bash
-curl -X POST http://192.168.1.100/api/command -d "cmd=TYPE:Hello"
-curl -X POST http://192.168.1.100/api/command -d "cmd=ENTER"
-curl -X POST http://192.168.1.100/api/command -d "cmd=GUI_R"
+curl -u admin:HID_Admin2024! -X POST http://192.168.1.100/api/command -d "cmd=TYPE:Hello"
+curl -u admin:HID_Admin2024! -X POST http://192.168.1.100/api/command -d "cmd=ENTER"
+curl -u admin:HID_Admin2024! -X POST http://192.168.1.100/api/command -d "cmd=GUI_R"
 ```
 
 Response: `{"status": "ok", "message": "Command sent"}`
@@ -32,7 +42,7 @@ Response: `{"status": "ok", "message": "Command sent"}`
 Execute DuckyScript. Parameter: `script` (required)
 
 ```bash
-curl -X POST http://192.168.1.100/api/script -d "script=GUI r
+curl -u admin:HID_Admin2024! -X POST http://192.168.1.100/api/script -d "script=GUI r
 DELAY 500
 STRING notepad
 ENTER"
@@ -45,8 +55,8 @@ ENTER"
 Control mouse jiggler. Parameter: `enable` (1 or 0)
 
 ```bash
-curl http://192.168.1.100/api/jiggler?enable=1  # Enable
-curl http://192.168.1.100/api/jiggler?enable=0  # Disable
+curl -u admin:HID_Admin2024! http://192.168.1.100/api/jiggler?enable=1  # Enable
+curl -u admin:HID_Admin2024! http://192.168.1.100/api/jiggler?enable=0  # Disable
 ```
 
 ---
@@ -56,7 +66,7 @@ curl http://192.168.1.100/api/jiggler?enable=0  # Disable
 Get device status (WiFi mode, SSID, IP)
 
 ```bash
-curl http://192.168.1.100/api/status
+curl -u admin:HID_Admin2024! http://192.168.1.100/api/status
 ```
 
 ---
@@ -66,7 +76,7 @@ curl http://192.168.1.100/api/status
 Get current WiFi settings
 
 ```bash
-curl http://192.168.1.100/api/wifi
+curl -u admin:HID_Admin2024! http://192.168.1.100/api/wifi
 ```
 
 ---
@@ -76,7 +86,7 @@ curl http://192.168.1.100/api/wifi
 Save WiFi credentials and restart. Parameters: `ssid`, `password`
 
 ```bash
-curl -X POST http://192.168.4.1/api/wifi -d "ssid=MyNetwork" -d "password=pass123"
+curl -u admin:HID_Admin2024! -X POST http://192.168.4.1/api/wifi -d "ssid=MyNetwork" -d "password=pass123"
 ```
 
 ---
@@ -86,7 +96,7 @@ curl -X POST http://192.168.4.1/api/wifi -d "ssid=MyNetwork" -d "password=pass12
 Scan for WiFi networks. Returns array of `{ssid, rssi, encryption}`
 
 ```bash
-curl http://192.168.1.100/api/scan
+curl -u admin:HID_Admin2024! http://192.168.1.100/api/scan
 ```
 
 ## Command Protocol
@@ -178,5 +188,6 @@ DuckyScripts can be saved to and loaded from LittleFS for reuse. Scripts are sto
 ## Notes
 
 - All endpoints return JSON: `{"status": "ok/error", "message": "..."}`
-- No built-in authentication - use on trusted networks only
+- HTTP Basic Authentication is required for all endpoints and web pages
+- Default credentials: `admin` / `HID_Admin2024!` (change in config.h)
 - Add delays between rapid commands to avoid buffer overflow
