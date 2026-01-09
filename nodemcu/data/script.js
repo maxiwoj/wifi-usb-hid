@@ -581,6 +581,9 @@ let jigglerEnabled = false;
 
           // Update the custom OS list display
           displayCustomOSList(customOSList);
+
+          // Restore selected OS after custom OS are loaded
+          loadSelectedOS();
         })
         .catch(error => {
           console.error('Error loading custom OS:', error);
@@ -663,6 +666,17 @@ let jigglerEnabled = false;
       .then(data => {
         if (data.status === 'ok') {
           log('Custom OS deleted: ' + osName);
+
+          // Clear saved OS if the deleted OS was selected
+          try {
+            const savedOS = localStorage.getItem('selectedOS');
+            if (savedOS === osName) {
+              localStorage.removeItem('selectedOS');
+            }
+          } catch (error) {
+            console.error('Failed to check/clear saved OS:', error);
+          }
+
           loadCustomOS();
           loadQuickActionsManager();
         } else {
@@ -791,15 +805,65 @@ let jigglerEnabled = false;
       }
     }
 
+    // OS Selection Persistence Functions
+    function saveSelectedOS(os) {
+      try {
+        localStorage.setItem('selectedOS', os);
+      } catch (error) {
+        console.error('Failed to save selected OS:', error);
+      }
+    }
+
+    function loadSelectedOS() {
+      try {
+        const savedOS = localStorage.getItem('selectedOS');
+        if (savedOS) {
+          // Set OS in main page selector if it exists
+          const osSelect = document.getElementById('osSelect');
+          if (osSelect) {
+            osSelect.value = savedOS;
+          }
+
+          // Set OS in manager page selector if it exists
+          const osManagerSelect = document.getElementById('osManagerSelect');
+          if (osManagerSelect) {
+            osManagerSelect.value = savedOS;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load selected OS:', error);
+      }
+    }
+
     // Update Quick Actions and Quick Scripts when OS selection changes
-    document.getElementById('osSelect').addEventListener('change', function() {
-      updateQuickActions();
-      loadQuickScripts();
-    });
+    const osSelect = document.getElementById('osSelect');
+    if (osSelect) {
+      osSelect.addEventListener('change', function() {
+        saveSelectedOS(this.value);
+        updateQuickActions();
+        loadQuickScripts();
+      });
+    }
+
+    // Update manager when OS selection changes on manage pages
+    const osManagerSelect = document.getElementById('osManagerSelect');
+    if (osManagerSelect) {
+      osManagerSelect.addEventListener('change', function() {
+        saveSelectedOS(this.value);
+        if (typeof loadQuickActionsManager === 'function') {
+          loadQuickActionsManager();
+        }
+      });
+    }
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
+
+    // Load custom OS, then restore selected OS
     loadCustomOS();
+    loadSelectedOS();
+
+    // Load content based on selected OS
     updateQuickActions();
     loadQuickScripts();
     loadSavedScripts();
