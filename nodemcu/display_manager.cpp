@@ -157,9 +157,10 @@ void updateDisplayStatus() {
   }
 
   // Web Authentication - no label, just credentials
+  display.print("U:");
   display.print(WEB_AUTH_USER);
   // Use inverse color for separator to distinguish username/password
-  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+  display.setTextColor(SSD1306_WHITE);
   display.print("/");
   display.setTextColor(SSD1306_WHITE);
   display.println(WEB_AUTH_PASS);

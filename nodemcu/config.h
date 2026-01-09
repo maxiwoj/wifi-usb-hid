@@ -15,7 +15,7 @@
 
 // Web Authentication settings
 #define WEB_AUTH_USER "admin"
-#define WEB_AUTH_PASS "HID_Admin2024!"
+#define WEB_AUTH_PASS "WiFi_HID!826"
 
 // HTTPS Settings
 // WARNING: HTTPS uses significant memory on ESP8266 (15-20KB RAM)
