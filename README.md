@@ -19,6 +19,7 @@ A comprehensive list of features is available in the [FEATURES.md](docs/FEATURES
 -   Activity Log
 -   Custom Operating Systems
 -   WiFi Management
+-   File Management
 -   Web Authentication
 -   HTTPS Support
 -   Script Storage

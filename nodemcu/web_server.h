@@ -35,5 +35,11 @@ void handleSaveQuickScript();
 void handleDeleteQuickScript();
 void handleManageScripts();
 void handleTrackpadFullscreen();
+void handleManageFiles();
+void handleListFiles();
+void handleFileUpload();
+void handleFileUploadDone();
+void handleFileDelete();
+void handleFileDownload();
 
 #endif //WEB_SERVER_H
