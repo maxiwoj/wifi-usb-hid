@@ -88,6 +88,7 @@ void setupWebServer() {
   server.on("/manage-actions.html", HTTP_GET, handleManageActions);
   server.on("/manage-os.html", HTTP_GET, handleManageOS);
   server.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
+  server.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/script.js", HTTP_GET, handleJS);
   server.on("/api/command", HTTP_POST, handleCommand);
@@ -131,6 +132,7 @@ void setupWebServer() {
   secureServer.on("/manage-actions.html", HTTP_GET, handleManageActions);
   secureServer.on("/manage-os.html", HTTP_GET, handleManageOS);
   secureServer.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
+  secureServer.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
   secureServer.on("/style.css", HTTP_GET, handleCSS);
   secureServer.on("/script.js", HTTP_GET, handleJS);
   secureServer.on("/api/command", HTTP_POST, handleCommand);
@@ -665,6 +667,11 @@ void handleReorderQuickActions() {
 void handleManageScripts() {
   if (!checkAuthentication()) return;
   serveStaticFile("/manage-scripts.html", "text/html");
+}
+
+void handleTrackpadFullscreen() {
+  if (!checkAuthentication()) return;
+  serveStaticFile("/trackpad-fullscreen.html", "text/html");
 }
 
 void handleListQuickScripts() {

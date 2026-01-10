@@ -34,5 +34,6 @@ void handleListQuickScripts();
 void handleSaveQuickScript();
 void handleDeleteQuickScript();
 void handleManageScripts();
+void handleTrackpadFullscreen();
 
 #endif //WEB_SERVER_H
