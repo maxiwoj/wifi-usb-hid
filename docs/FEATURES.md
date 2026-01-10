@@ -61,6 +61,7 @@ Extend beyond Windows, macOS, and Linux by creating custom OS categories with th
 Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to your home/office network. Auto-reconnects on startup with automatic fallback to AP mode if connection fails.
 
 ### File Management
+![File Management Interface](resource/fileManagement.png)
 
 Remote file system management for LittleFS files. Upload, download, and manage files directly through the web interface at `/manage-files.html` without requiring physical access to the device.
 
