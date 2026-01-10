@@ -212,12 +212,7 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
     (function() {
       log('Quick Scripts Manager loaded');
       loadCustomOS();
-      loadQuickScriptsManager();
-
-      // Update OS name display
-      document.getElementById('osManagerSelect').addEventListener('change', function() {
-        document.getElementById('currentOSName').textContent = this.value;
-      });
+      // Note: loadQuickScriptsManager() and currentOSName update are handled by script.js after loadSelectedOS()
     })();
   </script>
 </body>

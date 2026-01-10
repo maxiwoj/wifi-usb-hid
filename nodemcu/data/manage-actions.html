@@ -183,12 +183,7 @@
     (function() {
       log('Quick Actions Manager loaded');
       loadCustomOS();
-      loadQuickActionsManager();
-
-      // Update OS name display
-      document.getElementById('osManagerSelect').addEventListener('change', function() {
-        document.getElementById('currentOSName').textContent = this.value;
-      });
+      // Note: loadQuickActionsManager() and currentOSName update are handled by script.js after loadSelectedOS()
     })();
   </script>
 </body>

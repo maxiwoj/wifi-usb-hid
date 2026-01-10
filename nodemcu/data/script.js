@@ -845,6 +845,12 @@ let jigglerEnabled = false;
           const osManagerSelect = document.getElementById('osManagerSelect');
           if (osManagerSelect) {
             osManagerSelect.value = selectedOS;
+
+            // Update current OS name display if it exists
+            const currentOSName = document.getElementById('currentOSName');
+            if (currentOSName) {
+              currentOSName.textContent = selectedOS;
+            }
           }
 
           // Save to localStorage if it came from URL
@@ -872,8 +878,19 @@ let jigglerEnabled = false;
     if (osManagerSelect) {
       osManagerSelect.addEventListener('change', function() {
         saveSelectedOS(this.value);
+
+        // Update current OS name display if it exists
+        const currentOSName = document.getElementById('currentOSName');
+        if (currentOSName) {
+          currentOSName.textContent = this.value;
+        }
+
+        // Reload managers if they exist
         if (typeof loadQuickActionsManager === 'function') {
           loadQuickActionsManager();
+        }
+        if (typeof loadQuickScriptsManager === 'function') {
+          loadQuickScriptsManager();
         }
       });
     }
@@ -894,4 +911,9 @@ let jigglerEnabled = false;
     // Load quick actions manager if the element exists
     if (document.getElementById('quickActionsManager')) {
       loadQuickActionsManager();
+    }
+
+    // Load quick scripts manager if the element exists
+    if (typeof loadQuickScriptsManager === 'function') {
+      loadQuickScriptsManager();
     }
