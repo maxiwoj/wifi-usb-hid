@@ -45,6 +45,9 @@ See **[FEATURES.md](docs/FEATURES.md)** for a detailed description of each featu
 ![Connected Hardware with Display](docs/resource/display_connected_pic.jpeg)
 *NodeMCU and Pro Micro with optional OLED display*
 
+![Assembled Hardware in a small box](docs/resource/assembled.jpeg)
+*NodeMCU and Pro Micro with optional OLED display assembled in a small 3d printed box*
+
 ## Software
 
 - Arduino IDE 1.8+
