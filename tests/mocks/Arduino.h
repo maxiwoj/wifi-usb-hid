@@ -146,6 +146,18 @@ public:
         }
     }
 
+    void replace(const String& from, const String& to) {
+        size_t pos = 0;
+        while ((pos = data.find(from.data, pos)) != std::string::npos) {
+            data.replace(pos, from.length(), to.data);
+            pos += to.length();
+        }
+    }
+
+    void replace(const char* from, const char* to) {
+        replace(String(from), String(to));
+    }
+
     // Conversion to C++ types
     const char* c_str() const {
         return data.c_str();

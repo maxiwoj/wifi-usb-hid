@@ -11,7 +11,9 @@ TEST_EXEC = run_tests
 TEST_SOURCES = test_main.cpp \
                unit/test_utils.cpp \
                unit/test_quick_scripts.cpp \
-               unit/test_ducky_parser.cpp
+               unit/test_ducky_parser.cpp \
+               unit/test_littlefs_manager.cpp \
+               unit/test_eeprom_helpers.cpp
 
 # Object files
 TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
