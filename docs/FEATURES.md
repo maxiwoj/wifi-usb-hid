@@ -60,6 +60,39 @@ Extend beyond Windows, macOS, and Linux by creating custom OS categories with th
 
 Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to your home/office network. Auto-reconnects on startup with automatic fallback to AP mode if connection fails.
 
+### File Management
+![File Management Interface](resource/fileManagement.png)
+
+Remote file system management for LittleFS files. Upload, download, and manage files directly through the web interface at `/manage-files.html` without requiring physical access to the device.
+
+**Features:**
+- Upload any file type to LittleFS filesystem (HTML, CSS, JS, TXT, etc.)
+- Replace existing files including core interface files (index.html, style.css, script.js)
+- Download files for backup or verification
+- Delete files with confirmation prompts
+- View filesystem status (total, used, free space with visual progress bar)
+- File list with sizes displayed in KB
+- Core files marked with special badge (index.html, style.css, script.js)
+- HTTP Basic Authentication protects all file operations
+- Automatic filename sanitization to prevent security issues
+- Space availability check before uploads (maintains 10% safety margin)
+- Chunked upload handling to optimize memory usage on ESP8266
+
+**Use Cases:**
+- Update the main interface remotely without reflashing
+- Upload custom HTML/CSS/JS files for interface customization
+- Add new resource files (images, fonts, etc.)
+- Backup important files by downloading them
+- Monitor filesystem usage to prevent storage issues
+
+**Security:**
+- All file operations require authentication
+- Filename sanitization prevents path traversal attacks
+- Upload size validation prevents filesystem overflow
+- Safe deletion with confirmation prompts for user protection
+
+Access the file manager through the "File Manager" button in the main interface header or navigate directly to `http://<device-ip>/manage-files.html`.
+
 ### Additional Features
 
 - **Web Authentication** - HTTP Basic Authentication protects all endpoints (default: admin/WiFi_HID!826)

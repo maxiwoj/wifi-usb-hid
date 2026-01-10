@@ -112,6 +112,11 @@ void setupWebServer() {
   server.on("/api/customos", HTTP_GET, handleListCustomOS);
   server.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   server.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
+  server.on("/manage-files.html", HTTP_GET, handleManageFiles);
+  server.on("/api/files", HTTP_GET, handleListFiles);
+  server.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
+  server.on("/api/files/delete", HTTP_POST, handleFileDelete);
+  server.on("/api/files/download", HTTP_GET, handleFileDownload);
 
   server.begin();
   Serial.println("HTTP server started on port 80");
@@ -156,6 +161,11 @@ void setupWebServer() {
   secureServer.on("/api/customos", HTTP_GET, handleListCustomOS);
   secureServer.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   secureServer.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
+  secureServer.on("/manage-files.html", HTTP_GET, handleManageFiles);
+  secureServer.on("/api/files", HTTP_GET, handleListFiles);
+  secureServer.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
+  secureServer.on("/api/files/delete", HTTP_POST, handleFileDelete);
+  secureServer.on("/api/files/download", HTTP_GET, handleFileDownload);
 
   secureServer.begin();
   httpsEnabled = true;
@@ -772,4 +782,207 @@ void handleDeleteQuickScript() {
   } else {
     SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Quick script not found\"}");
   }
+}
+
+// File Management Handlers
+
+void handleManageFiles() {
+  if (!checkAuthentication()) return;
+  serveStaticFile("/manage-files.html", "text/html");
+}
+
+void handleListFiles() {
+  if (!checkAuthentication()) return;
+
+  if (!littlefsAvailable) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
+    return;
+  }
+
+  size_t totalBytes = 0;
+  size_t usedBytes = 0;
+
+  if (!getFilesystemInfo(totalBytes, usedBytes)) {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to get filesystem info\"}");
+    return;
+  }
+
+  String json = "{";
+  json += "\"filesystem\":{";
+  json += "\"total\":" + String(totalBytes) + ",";
+  json += "\"used\":" + String(usedBytes) + ",";
+  json += "\"free\":" + String(totalBytes - usedBytes);
+  json += "},";
+  json += "\"files\":[";
+
+  Dir dir = LittleFS.openDir("/");
+  bool first = true;
+
+  while (dir.next()) {
+    if (!first) json += ",";
+    first = false;
+
+    String filename = dir.fileName();
+    size_t filesize = dir.fileSize();
+
+    json += "{";
+    json += "\"name\":\"" + escapeJson(filename) + "\",";
+    json += "\"size\":" + String(filesize);
+    json += "}";
+  }
+
+  json += "]}";
+  SERVER_SEND(200, "application/json", json);
+}
+
+// Global variable for file upload
+File uploadFile;
+
+void handleFileUpload() {
+  if (!checkAuthentication()) return;
+
+  HTTPUpload& upload = server.upload();
+
+  if (upload.status == UPLOAD_FILE_START) {
+    String filename = upload.filename;
+    if (filename.length() == 0) {
+      Serial.println("Upload error: No filename");
+      return;
+    }
+
+    // Sanitize filename
+    filename = sanitizeFilename(filename);
+    Serial.println("Upload start: " + filename);
+
+    // Check available space (rough estimate)
+    if (!hasAvailableSpace(100000)) { // Reserve 100KB minimum
+      Serial.println("Upload error: Insufficient space");
+      return;
+    }
+
+    // Open file for writing
+    uploadFile = LittleFS.open(filename, "w");
+    if (!uploadFile) {
+      Serial.println("Upload error: Failed to open file for writing");
+    }
+  }
+  else if (upload.status == UPLOAD_FILE_WRITE) {
+    // Write chunk to file
+    if (uploadFile) {
+      uploadFile.write(upload.buf, upload.currentSize);
+      Serial.print(".");
+    }
+  }
+  else if (upload.status == UPLOAD_FILE_END) {
+    // Close file
+    if (uploadFile) {
+      uploadFile.close();
+      Serial.println("\nUpload complete: " + String(upload.totalSize) + " bytes");
+      displayAction("File uploaded: " + upload.filename);
+    }
+  }
+}
+
+void handleFileUploadDone() {
+  if (!checkAuthentication()) return;
+
+  HTTPUpload& upload = server.upload();
+
+  if (upload.status == UPLOAD_FILE_END) {
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File uploaded successfully\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload failed\"}");
+  }
+}
+
+void handleFileDelete() {
+  if (!checkAuthentication()) return;
+
+  if (!littlefsAvailable) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
+    return;
+  }
+
+  if (!SERVER_HAS_ARG("name")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing name parameter\"}");
+    return;
+  }
+
+  String filename = SERVER_ARG("name");
+
+  // Ensure filename starts with /
+  if (!filename.startsWith("/")) {
+    filename = "/" + filename;
+  }
+
+  if (!LittleFS.exists(filename)) {
+    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"File not found\"}");
+    return;
+  }
+
+  if (LittleFS.remove(filename)) {
+    Serial.println("File deleted: " + filename);
+    displayAction("File deleted: " + filename);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File deleted\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete file\"}");
+  }
+}
+
+void handleFileDownload() {
+  if (!checkAuthentication()) return;
+
+  if (!littlefsAvailable) {
+    SERVER_SEND(503, "text/plain", "LittleFS not available");
+    return;
+  }
+
+  if (!SERVER_HAS_ARG("name")) {
+    SERVER_SEND(400, "text/plain", "Missing name parameter");
+    return;
+  }
+
+  String filename = SERVER_ARG("name");
+
+  // Ensure filename starts with /
+  if (!filename.startsWith("/")) {
+    filename = "/" + filename;
+  }
+
+  if (!LittleFS.exists(filename)) {
+    SERVER_SEND(404, "text/plain", "File not found");
+    return;
+  }
+
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    SERVER_SEND(500, "text/plain", "Failed to open file");
+    return;
+  }
+
+  // Get clean filename (without path) for Content-Disposition
+  String cleanFilename = filename;
+  int lastSlash = filename.lastIndexOf('/');
+  if (lastSlash >= 0) {
+    cleanFilename = filename.substring(lastSlash + 1);
+  }
+
+  // Set Content-Disposition header for download
+  String contentDisposition = "attachment; filename=\"" + cleanFilename + "\"";
+
+#if ENABLE_HTTPS
+  if (httpsEnabled && secureServer.client()) {
+    secureServer.sendHeader("Content-Disposition", contentDisposition);
+    secureServer.streamFile(file, "application/octet-stream");
+  } else {
+    server.sendHeader("Content-Disposition", contentDisposition);
+    server.streamFile(file, "application/octet-stream");
+  }
+#else
+  server.sendHeader("Content-Disposition", contentDisposition);
+  server.streamFile(file, "application/octet-stream");
+#endif
+
+  file.close();
+  Serial.println("File downloaded: " + filename);
 }

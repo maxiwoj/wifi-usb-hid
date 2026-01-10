@@ -27,6 +27,11 @@ String loadQuickScripts(String os);
 bool deleteQuickScript(String os, String id);
 bool deleteAllQuickScripts(String os);
 
+// File management functions
+String sanitizeFilename(String filename);
+bool hasAvailableSpace(size_t requiredBytes);
+bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes);
+
 extern bool littlefsAvailable;
 
 #endif //LITTLEFS_MANAGER_H

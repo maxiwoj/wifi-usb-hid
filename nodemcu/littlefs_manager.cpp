@@ -654,3 +654,65 @@ bool deleteAllQuickScripts(String os) {
 
   return false;
 }
+
+// File Management Functions
+
+String sanitizeFilename(String filename) {
+  // Ensure filename starts with /
+  if (!filename.startsWith("/")) {
+    filename = "/" + filename;
+  }
+
+  // Remove path traversal attempts
+  filename.replace("../", "");
+  filename.replace("..\\", "");
+
+  // Replace null bytes and other dangerous characters
+  filename.replace("\0", "");
+
+  // Remove multiple consecutive slashes
+  while (filename.indexOf("//") != -1) {
+    filename.replace("//", "/");
+  }
+
+  // Don't allow just "/"
+  if (filename == "/") {
+    filename = "/file";
+  }
+
+  return filename;
+}
+
+bool hasAvailableSpace(size_t requiredBytes) {
+  if (!littlefsAvailable) {
+    return false;
+  }
+
+  FSInfo fs_info;
+  if (!LittleFS.info(fs_info)) {
+    return false;
+  }
+
+  size_t availableBytes = fs_info.totalBytes - fs_info.usedBytes;
+
+  // Keep 10% safety margin
+  size_t safetyMargin = fs_info.totalBytes / 10;
+
+  return (availableBytes - safetyMargin) >= requiredBytes;
+}
+
+bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes) {
+  if (!littlefsAvailable) {
+    return false;
+  }
+
+  FSInfo fs_info;
+  if (!LittleFS.info(fs_info)) {
+    return false;
+  }
+
+  totalBytes = fs_info.totalBytes;
+  usedBytes = fs_info.usedBytes;
+
+  return true;
+}
