@@ -33,6 +33,9 @@ Base URL:
 
 - **GET /** - Main control interface (HTML)
 - **GET /setup** - WiFi configuration page (HTML)
+- **GET /manage-actions.html** - Quick actions management interface (HTML)
+- **GET /manage-scripts.html** - Quick scripts management interface (HTML)
+- **GET /manage-os.html** - Custom operating systems management (HTML)
 
 ---
 
@@ -65,12 +68,29 @@ ENTER"
 
 ### GET /api/jiggler
 
-Control mouse jiggler. Parameter: `enable` (1 or 0)
+Control mouse jiggler with configurable movement patterns.
+
+**Parameters:**
+- `enable` (required): `1` to enable, `0` to disable
+- `type` (optional): Movement pattern - `simple`, `circles`, or `random` (default: `simple`)
+- `diameter` (optional): Movement diameter in pixels, 1-50 (default: `2`)
+- `delay` (optional): Delay between movements in milliseconds, 100-60000 (default: `2000`)
 
 ```bash
-curl -u admin:WiFi_HID!826 http://192.168.1.100/api/jiggler?enable=1  # Enable
-curl -u admin:WiFi_HID!826 http://192.168.1.100/api/jiggler?enable=0  # Disable
+# Enable with default settings (simple movement, 2px diameter, 2000ms delay)
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/jiggler?enable=1
+
+# Enable with circular movement, 10px diameter, 1000ms delay
+curl -u admin:WiFi_HID!826 "http://192.168.1.100/api/jiggler?enable=1&type=circles&diameter=10&delay=1000"
+
+# Enable with random movement, 25px diameter, 5000ms delay
+curl -u admin:WiFi_HID!826 "http://192.168.1.100/api/jiggler?enable=1&type=random&diameter=25&delay=5000"
+
+# Disable jiggler
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/jiggler?enable=0
 ```
+
+Response: `{"status": "ok", "enabled": true/false}`
 
 ---
 
@@ -112,6 +132,248 @@ Scan for WiFi networks. Returns array of `{ssid, rssi, encryption}`
 curl -u admin:WiFi_HID!826 http://192.168.1.100/api/scan
 ```
 
+---
+
+### GET /api/quickactions
+
+Get all quick actions for a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name (e.g., `Windows`, `MacOS`, `Linux`, or custom OS name)
+
+```bash
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/quickactions?os=Windows
+```
+
+Response: Array of quick action objects with `cmd`, `label`, `desc`, and `class` fields
+
+---
+
+### POST /api/quickactions
+
+Add a new quick action for a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+- `cmd` (required): DuckyScript command (e.g., `GUI_R`, `CTRL_C`)
+- `label` (required): Button label
+- `desc` (optional): Description
+- `class` (optional): Button color class (default: `btn-primary`)
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/quickactions \
+  -d "os=Windows" \
+  -d "cmd=GUI_R" \
+  -d "label=Run Dialog" \
+  -d "desc=Open Windows Run dialog" \
+  -d "class=btn-info"
+```
+
+Response: `{"status": "ok", "message": "Quick action saved"}`
+
+---
+
+### POST /api/quickactions/delete
+
+Delete a quick action from a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+- `index` (required): Index of the quick action to delete (0-based)
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/quickactions/delete \
+  -d "os=Windows" \
+  -d "index=0"
+```
+
+---
+
+### POST /api/quickactions/reorder
+
+Reorder quick actions for a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+- `from` (required): Current index of the action
+- `to` (required): New index for the action
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/quickactions/reorder \
+  -d "os=Windows" \
+  -d "from=0" \
+  -d "to=2"
+```
+
+---
+
+### GET /api/quickscripts
+
+Get all quick scripts for a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+
+```bash
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/quickscripts?os=MacOS
+```
+
+Response: Array of quick script objects with `id`, `label`, `script`, and `class` fields
+
+---
+
+### POST /api/quickscripts
+
+Add or update a quick script for a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+- `id` (required): Unique script identifier (lowercase, no spaces)
+- `label` (required): Button label
+- `script` (required): DuckyScript content (multi-line)
+- `class` (optional): Button color class (default: `btn-primary`)
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/quickscripts \
+  -d "os=MacOS" \
+  -d "id=open-terminal" \
+  -d "label=Terminal" \
+  -d "script=GUI SPACE
+DELAY 500
+STRING Terminal
+ENTER" \
+  -d "class=btn-success"
+```
+
+Response: `{"status": "ok", "message": "Quick script saved"}`
+
+---
+
+### POST /api/quickscripts/delete
+
+Delete a quick script from a specific operating system.
+
+**Parameters:**
+- `os` (required): Operating system name
+- `id` (required): Script ID to delete
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/quickscripts/delete \
+  -d "os=MacOS" \
+  -d "id=open-terminal"
+```
+
+---
+
+### GET /api/customos
+
+Get list of all custom operating systems.
+
+```bash
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/customos
+```
+
+Response: Array of custom OS names (e.g., `["Android", "ChromeOS", "Raspberry Pi"]`)
+
+---
+
+### POST /api/customos
+
+Add a new custom operating system.
+
+**Parameters:**
+- `name` (required): Operating system name
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/customos \
+  -d "name=Android"
+```
+
+Response: `{"status": "ok", "message": "Custom OS added"}`
+
+---
+
+### POST /api/customos/delete
+
+Delete a custom operating system and all its associated quick actions and scripts.
+
+**Parameters:**
+- `name` (required): Operating system name to delete
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/customos/delete \
+  -d "name=Android"
+```
+
+Response: `{"status": "ok", "message": "Custom OS deleted"}`
+
+---
+
+### GET /api/scripts
+
+List all saved DuckyScripts.
+
+```bash
+curl -u admin:WiFi_HID!826 http://192.168.1.100/api/scripts
+```
+
+Response: Array of script filenames
+
+---
+
+### POST /api/scripts
+
+Save a DuckyScript to LittleFS storage.
+
+**Parameters:**
+- `name` (required): Script name (used as filename)
+- `content` (required): Script content
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/scripts \
+  -d "name=my-script" \
+  -d "content=GUI r
+DELAY 500
+STRING notepad
+ENTER"
+```
+
+Response: `{"status": "ok", "message": "Script saved"}`
+
+---
+
+### POST /api/scripts/load
+
+Load a saved DuckyScript from storage.
+
+**Parameters:**
+- `name` (required): Script name to load
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/scripts/load \
+  -d "name=my-script"
+```
+
+Response: `{"status": "ok", "content": "script content here"}`
+
+---
+
+### POST /api/scripts/delete
+
+Delete a saved DuckyScript.
+
+**Parameters:**
+- `name` (required): Script name to delete
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/scripts/delete \
+  -d "name=my-script"
+```
+
+Response: `{"status": "ok", "message": "Script deleted"}`
+
+---
+
 ## Command Protocol
 
 Commands sent via `/api/command` endpoint or DuckyScript.
@@ -140,7 +402,10 @@ Commands sent via `/api/command` endpoint or DuckyScript.
 - **Ping:** `PING` - Test communication (responds with PONG)
 - **Status:** `STATUS` - Get jiggler status
 - **LED:** `LED_ON`, `LED_OFF`
-- **Jiggler:** `JIGGLE_ON`, `JIGGLE_OFF`
+- **Jiggler:** `JIGGLE_ON <type> <diameter> <delay>`, `JIGGLE_OFF`
+  - Example: `JIGGLE_ON circles 10 2000` - Enable circular movement with 10px diameter, 2000ms delay
+  - Example: `JIGGLE_ON random 25 5000` - Enable random movement with 25px diameter, 5000ms delay
+  - Example: `JIGGLE_ON simple 2 2000` - Enable simple movement (default)
 
 ## DuckyScript Reference
 
@@ -196,7 +461,12 @@ ENTER
 
 ## Script Storage
 
-DuckyScripts can be saved to and loaded from LittleFS for reuse. Scripts are stored as files in the `/scripts_<name>.txt` format on the NodeMCU filesystem.
+DuckyScripts can be saved to and loaded from LittleFS for reuse. The system supports two types of scripts:
+
+1. **Saved Scripts** - General purpose scripts stored as `/scripts_<name>.txt` files. Managed via `/api/scripts` endpoints.
+2. **Quick Scripts** - Per-OS script buttons stored as `/quickscripts_<OS>.txt` files. Managed via `/api/quickscripts` endpoints and the web interface at `/manage-scripts.html`.
+
+Quick Actions are stored separately in `/quickactions_<OS>.txt` files for instant keyboard shortcuts.
 
 ## Notes
 

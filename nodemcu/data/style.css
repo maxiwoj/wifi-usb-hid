@@ -266,16 +266,14 @@
       }
 
       .card-header-controls {
-        flex-direction: column;
         align-items: stretch;
       }
 
       .card-header-controls h2 {
-        margin-bottom: 10px !important;
+        align-content: center;
       }
 
       .card-header-controls .btn {
-        width: 100%;
         margin: 0;
       }
 

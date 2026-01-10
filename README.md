@@ -10,39 +10,24 @@ Control a computer's keyboard and mouse remotely using Pro Micro (ATmega32U4) as
 
 ## Features
 
-### Type Text
-![Type Text Feature](docs/resource/typeText.png)
+A comprehensive list of features is available in the [FEATURES.md](docs/FEATURES.md) file.
 
-Type text remotely and send keyboard shortcuts to the target computer.
+-   Type Text
+-   Mouse Control with Live Trackpad
+-   Quick Actions
+-   Quick Scripts
+-   Activity Log
+-   Custom Operating Systems
+-   WiFi Management
+-   Web Authentication
+-   HTTPS Support
+-   Script Storage
+-   Advanced Mouse Jiggler
+-   REST API
+-   Optional OLED Display
 
-### Mouse Control with Live Trackpad
-![Mouse Control](docs/resource/mouseControl.png)
+See **[FEATURES.md](docs/FEATURES.md)** for a detailed description of each feature.
 
-Control mouse movement with directional buttons or use the live trackpad with adjustable sensitivity (0.5x - 10x) for smooth, intuitive control on desktop and mobile devices. Supports single-click, double-click gestures for highlighting text, and right-click for context menus.
-
-### Quick Scripts
-![Quick Scripts](docs/resource/QuickScripts.png)
-
-OS-specific quick scripts for common tasks on Windows, macOS, and Linux. Full DuckyScript support for automation.
-
-### Activity Log
-![Activity Log](docs/resource/ActivityLog.png)
-
-Real-time activity logging shows all commands and actions with timestamps.
-
-### WiFi Management
-![WiFi Configuration](docs/resource/wifiConfiguration.png)
-
-Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to your home/office network. Auto-reconnects on startup with automatic fallback to AP mode if connection fails.
-
-### Additional Features
-
-- **Web Authentication** - HTTP Basic Authentication protects all endpoints (default: admin/WiFi_HID!826)
-- **HTTPS Support** - Secure communication with self-signed certificate (HTTP + HTTPS on ports 80 and 443)
-- **Script Storage** - Save and load DuckyScripts to/from LittleFS for reuse
-- **Mouse Jiggler** - Automatic movement to prevent screen lock
-- **REST API** - Programmatic control via HTTP/HTTPS endpoints
-- **Optional OLED Display** - 128x64 display shows status, IP address, and web credentials
 
 ## Hardware
 
