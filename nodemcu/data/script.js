@@ -839,6 +839,10 @@ let jigglerEnabled = false;
           const osSelect = document.getElementById('osSelect');
           if (osSelect) {
             osSelect.value = selectedOS;
+
+            // Load quick actions and scripts for the selected OS on main page
+            updateQuickActions();
+            loadQuickScripts();
           }
 
           // Set OS in manager page selector if it exists
@@ -865,6 +869,13 @@ let jigglerEnabled = false;
           if (getOSFromURL()) {
             saveSelectedOS(selectedOS);
           }
+        } else {
+          // No saved OS - load defaults for main page if present
+          const osSelect = document.getElementById('osSelect');
+          if (osSelect) {
+            updateQuickActions();
+            loadQuickScripts();
+          }
         }
       } catch (error) {
         console.error('Failed to load selected OS:', error);
@@ -888,10 +899,11 @@ let jigglerEnabled = false;
 
     // Load custom OS, then restore selected OS
     // Note: loadSelectedOS() is called inside loadCustomOS() after custom OS are loaded
+    // loadSelectedOS() will also trigger loading of quick actions/scripts for the restored OS
     loadCustomOS();
 
-    // Load content based on selected OS (for main page)
-    updateQuickActions();
-    loadQuickScripts();
+    // Load other content
     loadSavedScripts();
     loadDeviceStatus();
+
+    // Note: Quick actions and scripts are loaded from within loadSelectedOS() after OS is properly set
