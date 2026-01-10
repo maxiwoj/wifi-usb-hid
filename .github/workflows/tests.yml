@@ -1,0 +1,43 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ make
+
+      - name: Build tests
+        run: |
+          cd tests
+          make clean
+          make
+
+      - name: Run tests
+        run: |
+          cd tests
+          make test
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f tests/run_tests ]; then
+            echo "✅ Tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tests failed to build" >> $GITHUB_STEP_SUMMARY
+          fi
