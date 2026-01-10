@@ -814,20 +814,42 @@ let jigglerEnabled = false;
       }
     }
 
+    function getOSFromURL() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('os');
+      } catch (error) {
+        console.error('Failed to get OS from URL:', error);
+        return null;
+      }
+    }
+
     function loadSelectedOS() {
       try {
-        const savedOS = localStorage.getItem('selectedOS');
-        if (savedOS) {
+        // Check URL parameter first (takes priority)
+        let selectedOS = getOSFromURL();
+
+        // If no URL parameter, check localStorage
+        if (!selectedOS) {
+          selectedOS = localStorage.getItem('selectedOS');
+        }
+
+        if (selectedOS) {
           // Set OS in main page selector if it exists
           const osSelect = document.getElementById('osSelect');
           if (osSelect) {
-            osSelect.value = savedOS;
+            osSelect.value = selectedOS;
           }
 
           // Set OS in manager page selector if it exists
           const osManagerSelect = document.getElementById('osManagerSelect');
           if (osManagerSelect) {
-            osManagerSelect.value = savedOS;
+            osManagerSelect.value = selectedOS;
+          }
+
+          // Save to localStorage if it came from URL
+          if (getOSFromURL()) {
+            saveSelectedOS(selectedOS);
           }
         }
       } catch (error) {
