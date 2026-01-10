@@ -31,7 +31,7 @@ Customizable one-click keyboard shortcuts for each operating system. Create, edi
 - Drag-and-drop reordering with up/down buttons
 - Persistent storage across reboots
 
-![Manage Quick Actions](docs/resource/ManageQuickActions.png)
+![Manage Quick Actions](docs/resource/manageQuickActions.png)
 
 ### Quick Scripts
 ![Quick Scripts](docs/resource/QuickScripts.png)
@@ -46,7 +46,7 @@ Create and manage custom DuckyScript automation buttons for each operating syste
 - Built-in example scripts for common tasks
 - Persistent storage in LittleFS
 
-![Manage Quick Scripts](docs/resource/ManageQuickScripts.png)
+![Manage Quick Scripts](docs/resource/manageQuickScripts.png)
 
 ### Activity Log
 ![Activity Log](docs/resource/ActivityLog.png)
@@ -54,7 +54,7 @@ Create and manage custom DuckyScript automation buttons for each operating syste
 Real-time activity logging shows all commands and actions with timestamps.
 
 ### Custom Operating Systems
-![Manage Operating Systems](docs/resource/ManageOS.png)
+![Manage Operating Systems](docs/resource/manageOS.png)
 
 Extend beyond Windows, macOS, and Linux by creating custom OS categories with their own quick actions and scripts. Perfect for specialized systems like Android, ChromeOS, Raspberry Pi, or any custom environment.
 
