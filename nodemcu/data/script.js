@@ -851,6 +851,14 @@ let jigglerEnabled = false;
             if (currentOSName) {
               currentOSName.textContent = selectedOS;
             }
+
+            // Load the appropriate manager after OS is set
+            if (document.getElementById('quickActionsManager')) {
+              loadQuickActionsManager();
+            }
+            if (typeof loadQuickScriptsManager === 'function') {
+              loadQuickScriptsManager();
+            }
           }
 
           // Save to localStorage if it came from URL
@@ -863,7 +871,7 @@ let jigglerEnabled = false;
       }
     }
 
-    // Update Quick Actions and Quick Scripts when OS selection changes
+    // Update Quick Actions and Quick Scripts when OS selection changes (main page only)
     const osSelect = document.getElementById('osSelect');
     if (osSelect) {
       osSelect.addEventListener('change', function() {
@@ -873,47 +881,17 @@ let jigglerEnabled = false;
       });
     }
 
-    // Update manager when OS selection changes on manage pages
-    const osManagerSelect = document.getElementById('osManagerSelect');
-    if (osManagerSelect) {
-      osManagerSelect.addEventListener('change', function() {
-        saveSelectedOS(this.value);
-
-        // Update current OS name display if it exists
-        const currentOSName = document.getElementById('currentOSName');
-        if (currentOSName) {
-          currentOSName.textContent = this.value;
-        }
-
-        // Reload managers if they exist
-        if (typeof loadQuickActionsManager === 'function') {
-          loadQuickActionsManager();
-        }
-        if (typeof loadQuickScriptsManager === 'function') {
-          loadQuickScriptsManager();
-        }
-      });
-    }
+    // Note: Event listeners for manage pages are set up in their respective inline scripts
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
 
     // Load custom OS, then restore selected OS
+    // Note: loadSelectedOS() is called inside loadCustomOS() after custom OS are loaded
     loadCustomOS();
-    loadSelectedOS();
 
-    // Load content based on selected OS
+    // Load content based on selected OS (for main page)
     updateQuickActions();
     loadQuickScripts();
     loadSavedScripts();
     loadDeviceStatus();
-
-    // Load quick actions manager if the element exists
-    if (document.getElementById('quickActionsManager')) {
-      loadQuickActionsManager();
-    }
-
-    // Load quick scripts manager if the element exists
-    if (typeof loadQuickScriptsManager === 'function') {
-      loadQuickScriptsManager();
-    }

@@ -20,7 +20,7 @@
 
     <div class="card">
       <h2>Select Operating System</h2>
-      <select id="osManagerSelect" onchange="loadQuickScriptsManager()">
+      <select id="osManagerSelect">
         <option value="Windows">Windows</option>
         <option value="MacOS">MacOS</option>
         <option value="Linux">Linux</option>
@@ -212,7 +212,24 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
     (function() {
       log('Quick Scripts Manager loaded');
       loadCustomOS();
-      // Note: loadQuickScriptsManager() and currentOSName update are handled by script.js after loadSelectedOS()
+
+      // Set up change handler for OS selector
+      const osManagerSelect = document.getElementById('osManagerSelect');
+      if (osManagerSelect) {
+        osManagerSelect.addEventListener('change', function() {
+          // Save to localStorage
+          saveSelectedOS(this.value);
+
+          // Update current OS name display
+          const currentOSName = document.getElementById('currentOSName');
+          if (currentOSName) {
+            currentOSName.textContent = this.value;
+          }
+
+          // Reload scripts for new OS
+          loadQuickScriptsManager();
+        });
+      }
     })();
   </script>
 </body>

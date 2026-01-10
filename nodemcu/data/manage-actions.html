@@ -20,7 +20,7 @@
 
     <div class="card">
       <h2>Select Operating System</h2>
-      <select id="osManagerSelect" onchange="loadQuickActionsManager()">
+      <select id="osManagerSelect">
         <option value="Windows">Windows</option>
         <option value="MacOS">MacOS</option>
         <option value="Linux">Linux</option>
@@ -183,7 +183,24 @@
     (function() {
       log('Quick Actions Manager loaded');
       loadCustomOS();
-      // Note: loadQuickActionsManager() and currentOSName update are handled by script.js after loadSelectedOS()
+
+      // Set up change handler for OS selector
+      const osManagerSelect = document.getElementById('osManagerSelect');
+      if (osManagerSelect) {
+        osManagerSelect.addEventListener('change', function() {
+          // Save to localStorage
+          saveSelectedOS(this.value);
+
+          // Update current OS name display
+          const currentOSName = document.getElementById('currentOSName');
+          if (currentOSName) {
+            currentOSName.textContent = this.value;
+          }
+
+          // Reload actions for new OS
+          loadQuickActionsManager();
+        });
+      }
     })();
   </script>
 </body>
