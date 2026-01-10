@@ -38,15 +38,15 @@
       <div id="defaultOSList" style="display: grid; gap: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
           <span style="font-weight: 600;">Windows</span>
-          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html?os=Windows'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
           <span style="font-weight: 600;">MacOS</span>
-          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html?os=MacOS'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
           <span style="font-weight: 600;">Linux</span>
-          <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
+          <button class="btn btn-primary" onclick="location.href='manage-actions.html?os=Linux'" style="padding: 5px 15px; font-size: 12px;">Manage Actions</button>
         </div>
       </div>
     </div>
@@ -126,7 +126,7 @@
         manageBtn.className = 'btn btn-primary';
         manageBtn.textContent = 'Manage Actions';
         manageBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
-        manageBtn.onclick = function() { location.href = 'manage-actions.html'; };
+        manageBtn.onclick = function() { location.href = 'manage-actions.html?os=' + encodeURIComponent(osName); };
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger';

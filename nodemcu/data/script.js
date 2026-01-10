@@ -37,16 +37,37 @@ let jigglerEnabled = false;
       if (jigglerEnabled) {
         toggle.classList.add('active');
         status.textContent = 'Enabled';
+
+        // Get all jiggler parameters
+        const type = document.getElementById('jigglerType').value;
+        const diameter = document.getElementById('jigglerDiameter').value;
+        const delay = document.getElementById('jigglerDelay').value;
+
+        // Send enable command with all parameters
+        fetch('/api/jiggler?enable=1&type=' + encodeURIComponent(type) +
+              '&diameter=' + encodeURIComponent(diameter) +
+              '&delay=' + encodeURIComponent(delay))
+          .then(response => response.json())
+          .then(data => {
+            log('Mouse jiggler enabled (type: ' + type + ', diameter: ' + diameter + 'px, delay: ' + delay + 'ms)');
+          })
+          .catch(error => {
+            log('Error enabling jiggler: ' + error);
+          });
       } else {
         toggle.classList.remove('active');
         status.textContent = 'Disabled';
-      }
 
-      fetch('/api/jiggler?enable=' + (jigglerEnabled ? '1' : '0'))
-        .then(response => response.json())
-        .then(data => {
-          log('Mouse jiggler ' + (jigglerEnabled ? 'enabled' : 'disabled'));
-        });
+        // Send disable command
+        fetch('/api/jiggler?enable=0')
+          .then(response => response.json())
+          .then(data => {
+            log('Mouse jiggler disabled');
+          })
+          .catch(error => {
+            log('Error disabling jiggler: ' + error);
+          });
+      }
     }
 
     function typeText() {
@@ -560,6 +581,9 @@ let jigglerEnabled = false;
 
           // Update the custom OS list display
           displayCustomOSList(customOSList);
+
+          // Restore selected OS after custom OS are loaded
+          loadSelectedOS();
         })
         .catch(error => {
           console.error('Error loading custom OS:', error);
@@ -642,6 +666,17 @@ let jigglerEnabled = false;
       .then(data => {
         if (data.status === 'ok') {
           log('Custom OS deleted: ' + osName);
+
+          // Clear saved OS if the deleted OS was selected
+          try {
+            const savedOS = localStorage.getItem('selectedOS');
+            if (savedOS === osName) {
+              localStorage.removeItem('selectedOS');
+            }
+          } catch (error) {
+            console.error('Failed to check/clear saved OS:', error);
+          }
+
           loadCustomOS();
           loadQuickActionsManager();
         } else {
@@ -770,21 +805,105 @@ let jigglerEnabled = false;
       }
     }
 
-    // Update Quick Actions and Quick Scripts when OS selection changes
-    document.getElementById('osSelect').addEventListener('change', function() {
-      updateQuickActions();
-      loadQuickScripts();
-    });
+    // OS Selection Persistence Functions
+    function saveSelectedOS(os) {
+      try {
+        localStorage.setItem('selectedOS', os);
+      } catch (error) {
+        console.error('Failed to save selected OS:', error);
+      }
+    }
+
+    function getOSFromURL() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('os');
+      } catch (error) {
+        console.error('Failed to get OS from URL:', error);
+        return null;
+      }
+    }
+
+    function loadSelectedOS() {
+      try {
+        // Check URL parameter first (takes priority)
+        let selectedOS = getOSFromURL();
+
+        // If no URL parameter, check localStorage
+        if (!selectedOS) {
+          selectedOS = localStorage.getItem('selectedOS');
+        }
+
+        if (selectedOS) {
+          // Set OS in main page selector if it exists
+          const osSelect = document.getElementById('osSelect');
+          if (osSelect) {
+            osSelect.value = selectedOS;
+
+            // Load quick actions and scripts for the selected OS on main page
+            updateQuickActions();
+            loadQuickScripts();
+          }
+
+          // Set OS in manager page selector if it exists
+          const osManagerSelect = document.getElementById('osManagerSelect');
+          if (osManagerSelect) {
+            osManagerSelect.value = selectedOS;
+
+            // Update current OS name display if it exists
+            const currentOSName = document.getElementById('currentOSName');
+            if (currentOSName) {
+              currentOSName.textContent = selectedOS;
+            }
+
+            // Load the appropriate manager after OS is set
+            if (document.getElementById('quickActionsManager')) {
+              loadQuickActionsManager();
+            }
+            if (typeof loadQuickScriptsManager === 'function') {
+              loadQuickScriptsManager();
+            }
+          }
+
+          // Save to localStorage if it came from URL
+          if (getOSFromURL()) {
+            saveSelectedOS(selectedOS);
+          }
+        } else {
+          // No saved OS - load defaults for main page if present
+          const osSelect = document.getElementById('osSelect');
+          if (osSelect) {
+            updateQuickActions();
+            loadQuickScripts();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load selected OS:', error);
+      }
+    }
+
+    // Update Quick Actions and Quick Scripts when OS selection changes (main page only)
+    const osSelect = document.getElementById('osSelect');
+    if (osSelect) {
+      osSelect.addEventListener('change', function() {
+        saveSelectedOS(this.value);
+        updateQuickActions();
+        loadQuickScripts();
+      });
+    }
+
+    // Note: Event listeners for manage pages are set up in their respective inline scripts
 
     // Initial log and setup
     log('Interface loaded - Ready to use');
+
+    // Load custom OS, then restore selected OS
+    // Note: loadSelectedOS() is called inside loadCustomOS() after custom OS are loaded
+    // loadSelectedOS() will also trigger loading of quick actions/scripts for the restored OS
     loadCustomOS();
-    updateQuickActions();
-    loadQuickScripts();
+
+    // Load other content
     loadSavedScripts();
     loadDeviceStatus();
 
-    // Load quick actions manager if the element exists
-    if (document.getElementById('quickActionsManager')) {
-      loadQuickActionsManager();
-    }
+    // Note: Quick actions and scripts are loaded from within loadSelectedOS() after OS is properly set

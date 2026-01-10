@@ -20,8 +20,10 @@ const int LED_PIN = LED_BUILTIN;
 // Mouse Jiggler state
 bool jigglerEnabled = false;
 unsigned long lastJiggleTime = 0;
-const unsigned long JIGGLE_INTERVAL = 2000; // 2 seconds
+unsigned long jiggleInterval = 2000; // 2 seconds (configurable)
 int jiggleDirection = 1;
+int jiggleDiameter = 2; // configurable diameter
+String jiggleType = "simple"; // simple, circles, random
 
 // Command buffer
 String commandBuffer = "";
@@ -64,10 +66,30 @@ void loop() {
   // Handle mouse jiggler
   if (jigglerEnabled) {
     unsigned long currentTime = millis();
-    if (currentTime - lastJiggleTime >= JIGGLE_INTERVAL) {
-      // Move mouse slightly
-      Mouse.move(2 * jiggleDirection, 0, 0);
-      jiggleDirection *= -1; // Alternate direction
+    if (currentTime - lastJiggleTime >= jiggleInterval) {
+      // Move mouse based on jiggle type
+      if (jiggleType == "simple") {
+        // Simple left-right movement
+        Mouse.move(jiggleDiameter * jiggleDirection, 0, 0);
+        jiggleDirection *= -1; // Alternate direction
+      }
+      else if (jiggleType == "circles") {
+        // Draw a complete circle
+        for (int angle = 0; angle < 360; angle += 10) {
+          float radians = angle * 3.14159 / 180.0;
+          int x = (int)(cos(radians) * jiggleDiameter);
+          int y = (int)(sin(radians) * jiggleDiameter);
+          Mouse.move(x, y, 0);
+          delay(5);
+        }
+      }
+      else if (jiggleType == "random") {
+        // Random movement
+        int x = random(-jiggleDiameter, jiggleDiameter + 1);
+        int y = random(-jiggleDiameter, jiggleDiameter + 1);
+        Mouse.move(x, y, 0);
+      }
+
       lastJiggleTime = currentTime;
 
       // Blink LED
@@ -82,10 +104,38 @@ void processCommand(String cmd) {
   cmd.trim();
 
   // Mouse Jiggler control
-  if (cmd == "JIGGLE_ON") {
+  if (cmd.startsWith("JIGGLE_ON")) {
+    // Parse parameters: JIGGLE_ON <type> <diameter> <delay>
+    // Example: JIGGLE_ON circles 5 3000
+    int firstSpace = cmd.indexOf(' ');
+    if (firstSpace > 0) {
+      int secondSpace = cmd.indexOf(' ', firstSpace + 1);
+      int thirdSpace = cmd.indexOf(' ', secondSpace + 1);
+
+      if (secondSpace > 0 && thirdSpace > 0) {
+        String type = cmd.substring(firstSpace + 1, secondSpace);
+        int diameter = cmd.substring(secondSpace + 1, thirdSpace).toInt();
+        unsigned long delay = cmd.substring(thirdSpace + 1).toInt();
+
+        // Validate and apply settings
+        type.toLowerCase();
+        if (type == "simple" || type == "circles" || type == "random") {
+          jiggleType = type;
+        }
+
+        if (diameter > 0 && diameter <= 100) {
+          jiggleDiameter = diameter;
+        }
+
+        if (delay >= 100 && delay <= 60000) {
+          jiggleInterval = delay;
+        }
+      }
+    }
+
     jigglerEnabled = true;
     lastJiggleTime = millis();
-    Serial1.println("OK:Jiggler enabled");
+    Serial1.println("OK:Jiggler enabled (type=" + jiggleType + ", diameter=" + String(jiggleDiameter) + ", delay=" + String(jiggleInterval) + ")");
     blinkLED(2, 100);
   }
   else if (cmd == "JIGGLE_OFF") {
