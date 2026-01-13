@@ -4,14 +4,91 @@
  */
 
 #include "hid_handler.h"
-#include "USB.h"
-#include "USBHIDKeyboard.h"
-#include "USBHIDMouse.h"
 #include <Arduino.h>
 
-// USB HID objects
-USBHIDKeyboard Keyboard;
-USBHIDMouse Mouse;
+// Try to include ESP32 USB HID libraries
+// These are available when "USB CDC On Boot" is enabled in Arduino IDE
+#if defined(ARDUINO_USB_MODE) && ARDUINO_USB_MODE == 1
+  // USB is enabled - use real USB HID classes
+  #include "USB.h"
+  #include "USBHIDKeyboard.h"
+  #include "USBHIDMouse.h"
+
+  USBHIDKeyboard Keyboard;
+  USBHIDMouse Mouse;
+
+  #define USB_HID_AVAILABLE 1
+#else
+  // USB not enabled - provide stub implementations
+  #warning "USB Mode not enabled! Set Tools > USB Mode to 'USB-OTG (TinyUSB)' and enable 'USB CDC On Boot'"
+
+  class StubUSB {
+  public:
+    void begin() { Serial.println("WARNING: USB HID not available - USB mode not enabled"); }
+  };
+
+  class StubKeyboard {
+  public:
+    void begin() {}
+    void end() {}
+    void press(uint8_t) {}
+    void release(uint8_t) {}
+    void releaseAll() {}
+    void write(uint8_t) {}
+    size_t print(const String& s) { return s.length(); }
+    size_t println(const String& s) { return s.length() + 1; }
+  };
+
+  class StubMouse {
+  public:
+    void begin() {}
+    void end() {}
+    void move(int8_t x, int8_t y, int8_t wheel = 0) {}
+    void press(uint8_t b = 1) {}
+    void release(uint8_t b = 1) {}
+    void click(uint8_t b = 1) {}
+  };
+
+  StubUSB USB;
+  StubKeyboard Keyboard;
+  StubMouse Mouse;
+
+  #define USB_HID_AVAILABLE 0
+
+  // Define missing key constants for stub mode
+  #define KEY_LEFT_CTRL   0x80
+  #define KEY_LEFT_SHIFT  0x81
+  #define KEY_LEFT_ALT    0x82
+  #define KEY_LEFT_GUI    0x83
+  #define KEY_RIGHT_CTRL  0x84
+  #define KEY_RIGHT_SHIFT 0x85
+  #define KEY_RIGHT_ALT   0x86
+  #define KEY_RIGHT_GUI   0x87
+  #define KEY_UP_ARROW    0xDA
+  #define KEY_DOWN_ARROW  0xD9
+  #define KEY_LEFT_ARROW  0xD8
+  #define KEY_RIGHT_ARROW 0xD7
+  #define KEY_BACKSPACE   0xB2
+  #define KEY_TAB         0xB3
+  #define KEY_RETURN      0xB0
+  #define KEY_ESC         0xB1
+  #define KEY_DELETE      0xD4
+  #define KEY_F1          0xC2
+  #define KEY_F2          0xC3
+  #define KEY_F3          0xC4
+  #define KEY_F4          0xC5
+  #define KEY_F5          0xC6
+  #define KEY_F6          0xC7
+  #define KEY_F7          0xC8
+  #define KEY_F8          0xC9
+  #define KEY_F9          0xCA
+  #define KEY_F10         0xCB
+  #define KEY_F11         0xCC
+  #define KEY_F12         0xCD
+  #define MOUSE_LEFT      0x01
+  #define MOUSE_RIGHT     0x02
+  #define MOUSE_MIDDLE    0x04
+#endif
 
 // LED pin
 const int LED_PIN = LED_BUILTIN;
@@ -37,7 +114,13 @@ void setupHID() {
   // Startup indication
   blinkLED(3, 200);
 
-  Serial.println("USB HID initialized");
+  #if USB_HID_AVAILABLE
+    Serial.println("USB HID initialized successfully");
+  #else
+    Serial.println("USB HID stub mode - HID functions will not work!");
+    Serial.println("To enable: Tools > USB Mode > 'USB-OTG (TinyUSB)'");
+    Serial.println("          Tools > USB CDC On Boot > 'Enabled'");
+  #endif
 }
 
 void handleJiggler() {
@@ -422,6 +505,11 @@ void processHIDCommand(String cmd) {
   else if (cmd == "STATUS") {
     String status = "STATUS:";
     status += jigglerEnabled ? "Jiggler=ON" : "Jiggler=OFF";
+    #if USB_HID_AVAILABLE
+      status += ",USB=ENABLED";
+    #else
+      status += ",USB=DISABLED";
+    #endif
     Serial.println(status);
   }
   else if (cmd == "LED_ON") {

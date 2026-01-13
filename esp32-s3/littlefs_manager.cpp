@@ -8,23 +8,23 @@ void setupLittleFS() {
     littlefsAvailable = LittleFS.begin();
     if (littlefsAvailable) {
         Serial.println("LittleFS mounted successfully");
-        
-        // Check LittleFS info
-        FSInfo fs_info;
-        LittleFS.info(fs_info);
+
+        // Check LittleFS info (ESP32 API)
         Serial.print("LittleFS Total bytes: ");
-        Serial.println(fs_info.totalBytes);
+        Serial.println(LittleFS.totalBytes());
         Serial.print("LittleFS Used bytes: ");
-        Serial.println(fs_info.usedBytes);
+        Serial.println(LittleFS.usedBytes());
 
         Serial.println("LittleFS contents:");
-        Dir dir = LittleFS.openDir("/");
-        while (dir.next()) {
-        Serial.println(dir.fileName());
+        File root = LittleFS.open("/");
+        File file = root.openNextFile();
+        while (file) {
+            Serial.println(file.name());
+            file = root.openNextFile();
         }
     } else {
         Serial.println("LittleFS initialization failed - script storage will not be available");
-        Serial.println("To enable LittleFS: Tools > ESP8266 Sketch Data Upload in Arduino IDE");
+        Serial.println("To enable LittleFS: Tools > ESP32 Sketch Data Upload in Arduino IDE");
         Serial.println("Server will continue without LittleFS support");
     }
 }
@@ -688,15 +688,18 @@ bool hasAvailableSpace(size_t requiredBytes) {
     return false;
   }
 
-  FSInfo fs_info;
-  if (!LittleFS.info(fs_info)) {
+  // ESP32 LittleFS API
+  size_t totalBytes = LittleFS.totalBytes();
+  size_t usedBytes = LittleFS.usedBytes();
+
+  if (totalBytes == 0) {
     return false;
   }
 
-  size_t availableBytes = fs_info.totalBytes - fs_info.usedBytes;
+  size_t availableBytes = totalBytes - usedBytes;
 
   // Keep 10% safety margin
-  size_t safetyMargin = fs_info.totalBytes / 10;
+  size_t safetyMargin = totalBytes / 10;
 
   return (availableBytes - safetyMargin) >= requiredBytes;
 }
@@ -706,13 +709,13 @@ bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes) {
     return false;
   }
 
-  FSInfo fs_info;
-  if (!LittleFS.info(fs_info)) {
+  // ESP32 LittleFS API
+  totalBytes = LittleFS.totalBytes();
+  usedBytes = LittleFS.usedBytes();
+
+  if (totalBytes == 0) {
     return false;
   }
-
-  totalBytes = fs_info.totalBytes;
-  usedBytes = fs_info.usedBytes;
 
   return true;
 }

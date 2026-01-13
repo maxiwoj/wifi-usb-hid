@@ -1,4 +1,5 @@
 #include "web_server.h"
+#include <WiFi.h>
 #include <WebServer.h>
 #include <LittleFS.h>
 #include "wifi_manager.h"
@@ -330,12 +331,18 @@ void handleListScripts() {
 
   // Check if LittleFS is available
   if (littlefsAvailable) {
-    // Iterate through all files in LittleFS
-    Dir dir = LittleFS.openDir("/");
-    while (dir.next()) {
-      String filename = dir.fileName();
+    // Iterate through all files in LittleFS (ESP32 API)
+    File root = LittleFS.open("/");
+    File file = root.openNextFile();
+    while (file) {
+      String filename = String(file.name());
 
-      // Check if it's a script file (starts with "/scripts_")
+      // Remove leading slash if present
+      if (filename.startsWith("/")) {
+        filename = filename.substring(1);
+      }
+
+      // Check if it's a script file (starts with "scripts_")
       if (filename.startsWith("scripts_") && filename.endsWith(".txt")) {
         if (!first) json += ",";
         first = false;
@@ -345,6 +352,7 @@ void handleListScripts() {
         json += "\"name\":\"" + escapeJson(name) + "\"";
         json += "}";
       }
+      file = root.openNextFile();
     }
   }
 
@@ -815,20 +823,24 @@ void handleListFiles() {
   json += "},";
   json += "\"files\":[";
 
-  Dir dir = LittleFS.openDir("/");
+  // Iterate through all files (ESP32 API)
+  File root = LittleFS.open("/");
+  File file = root.openNextFile();
   bool first = true;
 
-  while (dir.next()) {
+  while (file) {
     if (!first) json += ",";
     first = false;
 
-    String filename = dir.fileName();
-    size_t filesize = dir.fileSize();
+    String filename = String(file.name());
+    size_t filesize = file.size();
 
     json += "{";
     json += "\"name\":\"" + escapeJson(filename) + "\",";
     json += "\"size\":" + String(filesize);
     json += "}";
+
+    file = root.openNextFile();
   }
 
   json += "]}";

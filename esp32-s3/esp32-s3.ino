@@ -1,13 +1,16 @@
 /*
- * WiFi USB HID Control - ESP32-C3 with Built-in OLED
+ * WiFi USB HID Control - ESP32-S3 with Built-in LCD
  *
- * This sketch runs on ESP32-C3 with built-in 0.42" OLED display
+ * This sketch runs on ESP32-S3 with built-in 0.96" ST7735 IPS LCD display
  * Combines both WiFi web server and USB HID functionality in one board
  *
+ * Hardware: ESP32-S3 Dongle with 0.96" LCD IPS ST7735 (80x160 pixels)
+ * Chip: ESP32-S3R8 (8MB PSRAM)
+ *
  * Features:
- * - USB Keyboard and Mouse emulation (native ESP32-C3 USB)
+ * - USB Keyboard and Mouse emulation (native ESP32-S3 USB OTG)
  * - WiFi web server with REST API
- * - Built-in OLED display support (0.42" 72x40)
+ * - Built-in ST7735 LCD display support (0.96" IPS, 80x160)
  * - DuckyScript parser
  * - Mouse Jiggler
  * - Quick Actions and Scripts
@@ -17,9 +20,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
-#include "USB.h"
-#include "USBHIDKeyboard.h"
-#include "USBHIDMouse.h"
 
 #include "config.h"
 #include "wifi_manager.h"
@@ -31,13 +31,11 @@
 #include "hid_handler.h"
 
 extern WebServer server;
-extern USBHIDKeyboard Keyboard;
-extern USBHIDMouse Mouse;
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
   delay(100);
-  Serial.println("ESP32-C3 WiFi USB HID is booting up...");
+  Serial.println("ESP32-S3 WiFi USB HID is booting up...");
 
   // Initialize USB HID
   setupHID();
@@ -45,7 +43,7 @@ void setup() {
   // Initialize preferences (replaces EEPROM on ESP32)
   setupPreferences();
 
-  // Initialize display
+  // Initialize ST7735 LCD display
   setupDisplay();
 
   // Initialize LittleFS
@@ -76,7 +74,7 @@ void setup() {
 
   updateDisplayStatus();
 
-  Serial.println("ESP32-C3 WiFi USB HID ready!");
+  Serial.println("ESP32-S3 WiFi USB HID ready!");
 }
 
 void loop() {
