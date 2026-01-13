@@ -1,0 +1,4 @@
+editor|Open Editor|GUI SPACE\nDELAY 500\nSTRING textedit\nENTER|btn-primary
+terminal|Terminal|GUI SPACE\nDELAY 500\nSTRING terminal\nENTER|btn-success
+calculator|Calculator|GUI SPACE\nDELAY 500\nSTRING calculator\nENTER|btn-warning
+browser|Browser|GUI SPACE\nDELAY 500\nSTRING safari\nENTER|btn-info
