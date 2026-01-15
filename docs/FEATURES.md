@@ -10,6 +10,38 @@ Type text remotely and send keyboard shortcuts to the target computer.
 
 Control mouse movement with directional buttons or use the live trackpad with adjustable sensitivity (0.5x - 10x) for smooth, intuitive control on desktop and mobile devices. Supports single-click, double-click gestures for highlighting text, and right-click for context menus.
 
+### Keyboard Capture
+![Keyboard Capture](resource/keyboardCapture.png)
+
+Real-time keyboard event forwarding that captures all keyboard input in the browser and sends it directly to the connected computer. Perfect for remote typing, keyboard shortcuts, and situations where you need full keyboard control.
+
+**Features:**
+- Real-time key press and release events forwarded to target computer
+- Support for all standard keys including modifiers (Ctrl, Alt, Shift, GUI/Win/Cmd)
+- Function keys (F1-F12), arrow keys, and special keys (Tab, Backspace, Delete, etc.)
+- Event history display showing all captured keystrokes with timestamps
+- Statistics tracking for total events, key down, and key up counts
+- ESC key to quickly disable capture mode
+
+**Mobile Controls:**
+- Toggle-able mobile control panel with on-screen buttons
+- Modifier key toggles (Ctrl, Alt, Shift, GUI) that stay pressed until toggled off
+- Navigation keys with hold-to-repeat: Tab, Backspace, Delete, and arrow keys
+- Quick access to fullscreen mouse control
+- Keyboard input field for typing on mobile devices
+
+The mobile interface is designed for efficient remote control, providing essential keys and modifiers on-screen. This allows for complex keyboard combinations and text entry directly from a mobile device.
+
+| Mobile Keyboard Controls | Mobile Input Field |
+|---|---|
+| ![Mobile Keyboard Controls](resource/keyboardCaptureMobile1.png) | ![Mobile Input Field](resource/keyboardCaptureMobile2.png) |
+
+**Use Cases:**
+- Remote keyboard control when physical access is limited
+- Testing keyboard shortcuts on target systems
+- Accessibility assistance for users who need alternative input methods
+- Automation and scripting with precise key timing
+
 ### Quick Actions
 Customizable one-click keyboard shortcuts for each operating system. Create, edit, and manage quick action buttons through the dedicated management interface at `/manage-actions.html`.
 

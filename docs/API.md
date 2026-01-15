@@ -390,6 +390,33 @@ Commands sent via `/api/command` endpoint or DuckyScript.
 - **Alt Combos:** `ALT_TAB`, `ALT_F4`, etc.
 - **Special:** `CTRL_ALT_DEL`, `CTRL_ALT_T`
 
+### Keyboard Capture (Press/Release)
+
+Used by the Keyboard Capture feature for real-time key forwarding with separate press and release events:
+
+- **Key Press:** `KEY_PRESS:<key>` - Press and hold a key
+- **Key Release:** `KEY_RELEASE:<key>` - Release a specific key
+- **Release All:** `KEY_RELEASE_ALL` - Release all currently held keys
+
+**Supported keys:**
+- Modifiers: `CTRL`, `SHIFT`, `ALT`, `GUI`
+- Navigation: `UP`, `DOWN`, `LEFT`, `RIGHT`, `HOME`, `END`, `PAGEUP`, `PAGEDOWN`
+- Editing: `ENTER`, `TAB`, `BACKSPACE`, `DELETE`, `INSERT`, `ESC`
+- Function keys: `F1` through `F12`
+- Single characters: `a`-`z`, `0`-`9`, symbols
+
+**Examples:**
+```bash
+# Press Ctrl, press C, release C, release Ctrl (copy shortcut)
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=KEY_PRESS:CTRL"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=KEY_PRESS:c"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=KEY_RELEASE:c"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=KEY_RELEASE:CTRL"
+
+# Release all keys (safety command)
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=KEY_RELEASE_ALL"
+```
+
 ### Mouse
 
 - **Move:** `MOUSE_MOVE:x,y` - Relative movement in pixels

@@ -14,6 +14,7 @@ A comprehensive list of features is available in the [FEATURES.md](docs/FEATURES
 
 -   Type Text
 -   Mouse Control with Live Trackpad
+-   Keyboard Capture
 -   Quick Actions
 -   Quick Scripts
 -   Activity Log
