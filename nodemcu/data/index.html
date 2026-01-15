@@ -195,9 +195,9 @@
           <span style="white-space: nowrap;"><strong style="color: #667eea;">Network:</strong> <span id="networkSSID">Loading...</span></span>
         </div>
       </div>
-      <div style="display: flex; gap: 10px; align-items: center;">
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <span class="status-badge" id="statusBadge">Connected</span>
-        <button class="btn btn-primary" onclick="openKeyboardCapture()">🎹 Keyboard Capture</button>
+        <button class="btn btn-primary" onclick="openKeyboardCapture()">Keyboard Capture</button>
         <button class="btn btn-info" onclick="location.href='manage-files.html'">File Manager</button>
         <button class="btn btn-info" onclick="location.href='/setup'">WiFi Settings</button>
       </div>
@@ -416,13 +416,18 @@ STRING Hello World!"></textarea>
     let eventHistory = [];
     const MAX_HISTORY = 100;
 
-    // Key mapping for special keys
-    const keyMap = {
-      'Control': 'CTRL',
-      'Shift': 'SHIFT',
-      'Alt': 'ALT',
-      'Meta': 'GUI',
+    // Key mapping for special keys using event.code
+    const keyCodeMap = {
+      'ControlLeft': 'CTRL',
+      'ControlRight': 'CTRL',
+      'ShiftLeft': 'SHIFT',
+      'ShiftRight': 'SHIFT',
+      'AltLeft': 'ALT',
+      'AltRight': 'ALT',
+      'MetaLeft': 'GUI',
+      'MetaRight': 'GUI',
       'Enter': 'ENTER',
+      'NumpadEnter': 'ENTER',
       'Escape': 'ESC',
       'Tab': 'TAB',
       'Backspace': 'BACKSPACE',
@@ -437,12 +442,52 @@ STRING Hello World!"></textarea>
       'PageDown': 'PAGEDOWN',
       'Insert': 'INSERT',
       'CapsLock': 'CAPSLOCK',
-      ' ': 'SPACE'
+      'Space': 'SPACE'
     };
 
     // Function keys
     for (let i = 1; i <= 12; i++) {
-      keyMap[`F${i}`] = `F${i}`;
+      keyCodeMap[`F${i}`] = `F${i}`;
+    }
+
+    // Map event.code to character (for regular keys)
+    function codeToChar(code) {
+      // Handle letter keys: KeyA -> a
+      if (code.startsWith('Key')) {
+        return code.substring(3).toLowerCase();
+      }
+      // Handle digit keys: Digit0 -> 0
+      if (code.startsWith('Digit')) {
+        return code.substring(5);
+      }
+      // Handle numpad: Numpad0 -> 0
+      if (code.startsWith('Numpad')) {
+        const numpadKey = code.substring(6);
+        // Numpad operations
+        const numpadMap = {
+          'Add': '+',
+          'Subtract': '-',
+          'Multiply': '*',
+          'Divide': '/',
+          'Decimal': '.'
+        };
+        return numpadMap[numpadKey] || numpadKey;
+      }
+      // Handle special character keys
+      const specialKeys = {
+        'Minus': '-',
+        'Equal': '=',
+        'BracketLeft': '[',
+        'BracketRight': ']',
+        'Backslash': '\\',
+        'Semicolon': ';',
+        'Quote': "'",
+        'Comma': ',',
+        'Period': '.',
+        'Slash': '/',
+        'Backquote': '`'
+      };
+      return specialKeys[code] || null;
     }
 
     function openKeyboardCapture() {
@@ -480,26 +525,32 @@ STRING Hello World!"></textarea>
       }
     }
 
-    function getKeyCommand(key) {
-      if (keyMap[key]) {
-        return keyMap[key];
+    function getKeyCommand(event) {
+      const code = event.code;
+
+      // Check if it's a mapped special key
+      if (keyCodeMap[code]) {
+        return keyCodeMap[code];
       }
-      if (key.length === 1) {
-        return key;
+
+      // Try to convert code to character
+      const char = codeToChar(code);
+      if (char) {
+        return char;
       }
+
       return null;
     }
 
     function handleKeyboardKeyDown(event) {
       if (!captureEnabled) return;
 
-      const key = event.key;
-      const keyCommand = getKeyCommand(key);
+      const keyCommand = getKeyCommand(event);
 
       if (!keyCommand) return;
 
       // ESC key disables capture
-      if (key === 'Escape') {
+      if (event.code === 'Escape') {
         toggleKeyboardCapture();
         return;
       }
@@ -519,14 +570,16 @@ STRING Hello World!"></textarea>
 
       // Log the event
       const modifiers = [];
-      if (event.ctrlKey && key !== 'Control') modifiers.push('Ctrl');
-      if (event.shiftKey && key !== 'Shift') modifiers.push('Shift');
-      if (event.altKey && key !== 'Alt') modifiers.push('Alt');
-      if (event.metaKey && key !== 'Meta') modifiers.push('Meta');
+      const isModifier = ['CTRL', 'SHIFT', 'ALT', 'GUI'].includes(keyCommand);
+      if (event.ctrlKey && keyCommand !== 'CTRL') modifiers.push('Ctrl');
+      if (event.shiftKey && keyCommand !== 'SHIFT') modifiers.push('Shift');
+      if (event.altKey && keyCommand !== 'ALT') modifiers.push('Alt');
+      if (event.metaKey && keyCommand !== 'GUI') modifiers.push('Meta');
 
       addEventToHistory({
         type: 'keydown',
         key: keyCommand,
+        originalKey: event.key !== keyCommand ? event.key : null,
         modifiers: modifiers,
         timestamp: new Date()
       });
@@ -537,8 +590,7 @@ STRING Hello World!"></textarea>
     function handleKeyboardKeyUp(event) {
       if (!captureEnabled) return;
 
-      const key = event.key;
-      const keyCommand = getKeyCommand(key);
+      const keyCommand = getKeyCommand(event);
 
       if (!keyCommand) return;
 
@@ -554,14 +606,16 @@ STRING Hello World!"></textarea>
 
       // Log the event
       const modifiers = [];
-      if (event.ctrlKey && key !== 'Control') modifiers.push('Ctrl');
-      if (event.shiftKey && key !== 'Shift') modifiers.push('Shift');
-      if (event.altKey && key !== 'Alt') modifiers.push('Alt');
-      if (event.metaKey && key !== 'Meta') modifiers.push('Meta');
+      const isModifier = ['CTRL', 'SHIFT', 'ALT', 'GUI'].includes(keyCommand);
+      if (event.ctrlKey && keyCommand !== 'CTRL') modifiers.push('Ctrl');
+      if (event.shiftKey && keyCommand !== 'SHIFT') modifiers.push('Shift');
+      if (event.altKey && keyCommand !== 'ALT') modifiers.push('Alt');
+      if (event.metaKey && keyCommand !== 'GUI') modifiers.push('Meta');
 
       addEventToHistory({
         type: 'keyup',
         key: keyCommand,
+        originalKey: event.key !== keyCommand ? event.key : null,
         modifiers: modifiers,
         timestamp: new Date()
       });
@@ -589,9 +643,14 @@ STRING Hello World!"></textarea>
         const time = event.timestamp.toLocaleTimeString();
         const modStr = event.modifiers.length > 0 ? `<span class="key-event-modifiers">(${event.modifiers.join('+')})</span>` : '';
 
+        // Show original key if different (e.g., "ą" when sending "a")
+        const keyDisplay = event.originalKey ?
+          `${event.key} <span style="color: #9ca3af; font-size: 11px;">(${event.originalKey})</span>` :
+          event.key;
+
         return `<div class="key-event ${event.type}">
           <span class="key-event-type">${event.type === 'keydown' ? '⬇ DOWN' : '⬆ UP'}</span>
-          <span class="key-event-key">${event.key}</span>
+          <span class="key-event-key">${keyDisplay}</span>
           ${modStr}
           <span style="margin-left: auto; color: #9ca3af; font-size: 11px;">${time}</span>
         </div>`;
