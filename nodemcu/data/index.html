@@ -367,8 +367,25 @@ STRING Hello World!"></textarea>
           <span style="color: #6b7280; font-size: 12px; margin-left: 10px;">Press ESC to disable</span>
         </div>
 
-        <!-- Hidden input for mobile keyboard -->
-        <input type="text" id="mobileKeyboardInput" style="position: absolute; left: -9999px; width: 1px; height: 1px;" autocomplete="off">
+        <!-- Mobile keyboard input - visible but minimal for iOS compatibility -->
+        <input
+          type="text"
+          id="mobileKeyboardInput"
+          placeholder="Keyboard active (for mobile)"
+          style="
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            text-align: center;
+            color: #6b7280;
+            background: #f9fafb;
+            margin-bottom: 15px;
+            display: none;
+          "
+          autocomplete="off"
+        >
 
         <div class="instructions" style="cursor: pointer;" onclick="toggleInstructions()">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">
@@ -381,7 +398,6 @@ STRING Hello World!"></textarea>
             <li>View real-time event history below</li>
             <li><strong>Toggle OFF</strong> to stop capturing</li>
             <li>Press <strong>ESC</strong> key to quickly disable capture</li>
-            <li>On mobile devices, the on-screen keyboard will open automatically</li>
           </ul>
         </div>
 
@@ -542,11 +558,13 @@ STRING Hello World!"></textarea>
         indicator.classList.add('active');
         addLog('Keyboard capture ENABLED');
 
-        // On mobile devices, focus hidden input to trigger on-screen keyboard
+        // On mobile devices, show and focus input to trigger on-screen keyboard
         if (isMobileDevice()) {
-          setTimeout(() => {
-            mobileInput.focus();
-          }, 100);
+          mobileInput.style.display = 'block';
+          // Focus immediately without setTimeout for iOS compatibility
+          mobileInput.focus();
+          // Force keyboard on iOS
+          mobileInput.click();
         }
       } else {
         toggle.classList.remove('active');
@@ -556,9 +574,10 @@ STRING Hello World!"></textarea>
         addLog('Keyboard capture DISABLED');
         releaseAllKeys();
 
-        // Blur the mobile input
+        // Hide and blur the mobile input
         if (isMobileDevice()) {
           mobileInput.blur();
+          mobileInput.style.display = 'none';
         }
       }
     }
@@ -734,12 +753,15 @@ STRING Hello World!"></textarea>
       this.value = '';
     });
 
-    // Keep focus on mobile input when capture is active
+    // Keep focus on mobile input when capture is active (less aggressive refocus)
     mobileInput.addEventListener('blur', function() {
       if (captureEnabled && isMobileDevice()) {
+        // Delay refocus slightly to allow keyboard to settle
         setTimeout(() => {
-          this.focus();
-        }, 0);
+          if (captureEnabled) {
+            this.focus();
+          }
+        }, 100);
       }
     });
 
