@@ -364,28 +364,33 @@ STRING Hello World!"></textarea>
         <div class="jiggler-control" style="margin-bottom: 15px;">
           <div class="toggle-switch" id="captureToggle" onclick="toggleKeyboardCapture()"></div>
           <span id="captureStatus">Disabled</span>
-          <span style="color: #6b7280; font-size: 12px; margin-left: 10px;">Press ESC to disable</span>
+          <span style="color: #6b7280; font-size: 12px; margin-left: 10px;" id="escHint">Press ESC to disable</span>
         </div>
 
-        <!-- Mobile keyboard input - visible but minimal for iOS compatibility -->
-        <input
-          type="text"
-          id="mobileKeyboardInput"
-          placeholder="Keyboard active (for mobile)"
-          style="
-            width: 100%;
-            padding: 10px;
-            border: 2px dashed #d1d5db;
-            border-radius: 6px;
-            font-size: 16px;
-            text-align: center;
-            color: #6b7280;
-            background: #f9fafb;
-            margin-bottom: 15px;
-            display: none;
-          "
-          autocomplete="off"
-        >
+        <!-- Mobile keyboard input - visible on mobile for iOS compatibility -->
+        <div id="mobileInputContainer" style="display: none;">
+          <p style="color: #667eea; font-size: 13px; margin-bottom: 8px; font-weight: 500;">
+            📱 Tap the field below to open keyboard:
+          </p>
+          <input
+            type="text"
+            id="mobileKeyboardInput"
+            placeholder="Tap here to open keyboard"
+            style="
+              width: 100%;
+              padding: 12px;
+              border: 2px solid #667eea;
+              border-radius: 6px;
+              font-size: 16px;
+              text-align: center;
+              color: #333;
+              background: white;
+              margin-bottom: 15px;
+            "
+            autocomplete="off"
+            inputmode="text"
+          >
+        </div>
 
         <div class="instructions" style="cursor: pointer;" onclick="toggleInstructions()">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">
@@ -549,7 +554,9 @@ STRING Hello World!"></textarea>
       const toggle = document.getElementById('captureToggle');
       const status = document.getElementById('captureStatus');
       const indicator = document.getElementById('captureIndicator');
+      const mobileInputContainer = document.getElementById('mobileInputContainer');
       const mobileInput = document.getElementById('mobileKeyboardInput');
+      const escHint = document.getElementById('escHint');
 
       if (captureEnabled) {
         toggle.classList.add('active');
@@ -558,13 +565,10 @@ STRING Hello World!"></textarea>
         indicator.classList.add('active');
         addLog('Keyboard capture ENABLED');
 
-        // On mobile devices, show and focus input to trigger on-screen keyboard
+        // On mobile devices, show input field with instruction to tap
         if (isMobileDevice()) {
-          mobileInput.style.display = 'block';
-          // Focus immediately without setTimeout for iOS compatibility
-          mobileInput.focus();
-          // Force keyboard on iOS
-          mobileInput.click();
+          mobileInputContainer.style.display = 'block';
+          escHint.style.display = 'none';
         }
       } else {
         toggle.classList.remove('active');
@@ -574,10 +578,11 @@ STRING Hello World!"></textarea>
         addLog('Keyboard capture DISABLED');
         releaseAllKeys();
 
-        // Hide and blur the mobile input
+        // Hide mobile input and restore ESC hint
         if (isMobileDevice()) {
           mobileInput.blur();
-          mobileInput.style.display = 'none';
+          mobileInputContainer.style.display = 'none';
+          escHint.style.display = 'inline';
         }
       }
     }
@@ -753,16 +758,10 @@ STRING Hello World!"></textarea>
       this.value = '';
     });
 
-    // Keep focus on mobile input when capture is active (less aggressive refocus)
+    // On mobile, keep input available but don't auto-refocus (iOS won't reopen keyboard anyway)
     mobileInput.addEventListener('blur', function() {
-      if (captureEnabled && isMobileDevice()) {
-        // Delay refocus slightly to allow keyboard to settle
-        setTimeout(() => {
-          if (captureEnabled) {
-            this.focus();
-          }
-        }, 100);
-      }
+      // Input will lose focus naturally when keyboard closes
+      // User can tap again to reopen keyboard if needed
     });
 
     // Cleanup on page unload
