@@ -1078,15 +1078,24 @@ let jigglerEnabled = false;
         }
       };
 
-      window.showMobileInput = function() {
+      window.toggleMobileControls = function() {
         const mobileInputContainer = document.getElementById('mobileInputContainer');
         const escHint = document.getElementById('escHint');
+        const toggleBtn = document.getElementById('mobileControlsToggleBtn');
 
-        mobileInputContainer.style.display = 'block';
-        escHint.style.display = 'none';
-
-        // Update GUI button label based on current OS
-        window.updateGuiLabel();
+        if (mobileInputContainer.style.display === 'none') {
+          // Show controls
+          mobileInputContainer.style.display = 'block';
+          escHint.style.display = 'none';
+          toggleBtn.textContent = '▼ Hide Mobile Controls';
+          // Update GUI button label based on current OS
+          window.updateGuiLabel();
+        } else {
+          // Hide controls
+          mobileInputContainer.style.display = 'none';
+          escHint.style.display = 'inline';
+          toggleBtn.textContent = '▶ Show Mobile Controls';
+        }
       };
 
       window.updateGuiLabel = function() {
@@ -1122,12 +1131,12 @@ let jigglerEnabled = false;
         }
       };
 
-      window.sendArrowKey = function(event, key) {
+      window.sendHoldKey = function(event, key) {
         event.preventDefault(); // Prevent scrolling on mobile
         sendCommand('KEY_PRESS:' + key);
       };
 
-      window.releaseArrowKey = function(event, key) {
+      window.releaseHoldKey = function(event, key) {
         event.preventDefault(); // Prevent scrolling on mobile
         sendCommand('KEY_RELEASE:' + key);
       };
@@ -1177,6 +1186,12 @@ let jigglerEnabled = false;
           mobileInputContainer.style.display = 'none';
           manualMobileButton.style.display = 'none';
           escHint.style.display = 'inline';
+
+          // Reset mobile controls toggle button text
+          const toggleBtn = document.getElementById('mobileControlsToggleBtn');
+          if (toggleBtn) {
+            toggleBtn.textContent = '▶ Show Mobile Controls';
+          }
         }
       };
 

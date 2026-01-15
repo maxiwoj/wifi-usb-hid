@@ -369,8 +369,8 @@ STRING Hello World!"></textarea>
 
         <!-- Manual show keyboard button -->
         <div id="manualMobileButton" style="margin-bottom: 15px; display: none;">
-          <button class="btn btn-info" onclick="showMobileInput()" style="padding: 6px 12px; font-size: 13px;">
-            📱 Show Mobile Controls
+          <button id="mobileControlsToggleBtn" class="btn btn-info" onclick="toggleMobileControls()" style="padding: 6px 12px; font-size: 13px;">
+            ▶ Show Mobile Controls
           </button>
         </div>
 
@@ -419,18 +419,23 @@ STRING Hello World!"></textarea>
             </div>
           </div>
 
-          <!-- Arrow keys -->
+          <!-- Navigation keys -->
           <div style="margin-bottom: 15px;">
             <p style="color: #667eea; font-size: 13px; margin-bottom: 8px; font-weight: 500;">
-              Arrow Keys:
+              Navigation Keys (hold to repeat):
             </p>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'TAB')" onmouseup="releaseHoldKey(event, 'TAB')" ontouchstart="sendHoldKey(event, 'TAB')" ontouchend="releaseHoldKey(event, 'TAB')" style="padding: 10px 16px; font-size: 13px;">Tab ⇥</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'BACKSPACE')" onmouseup="releaseHoldKey(event, 'BACKSPACE')" ontouchstart="sendHoldKey(event, 'BACKSPACE')" ontouchend="releaseHoldKey(event, 'BACKSPACE')" style="padding: 10px 16px; font-size: 13px;">⌫ Backspace</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'DELETE')" onmouseup="releaseHoldKey(event, 'DELETE')" ontouchstart="sendHoldKey(event, 'DELETE')" ontouchend="releaseHoldKey(event, 'DELETE')" style="padding: 10px 16px; font-size: 13px;">Del</button>
+            </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 200px; margin: 0 auto;">
               <div></div>
-              <button class="btn btn-info" onmousedown="sendArrowKey(event, 'UP')" onmouseup="releaseArrowKey(event, 'UP')" ontouchstart="sendArrowKey(event, 'UP')" ontouchend="releaseArrowKey(event, 'UP')" style="padding: 12px; font-size: 16px;">↑</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'UP')" onmouseup="releaseHoldKey(event, 'UP')" ontouchstart="sendHoldKey(event, 'UP')" ontouchend="releaseHoldKey(event, 'UP')" style="padding: 12px; font-size: 16px;">↑</button>
               <div></div>
-              <button class="btn btn-info" onmousedown="sendArrowKey(event, 'LEFT')" onmouseup="releaseArrowKey(event, 'LEFT')" ontouchstart="sendArrowKey(event, 'LEFT')" ontouchend="releaseArrowKey(event, 'LEFT')" style="padding: 12px; font-size: 16px;">←</button>
-              <button class="btn btn-info" onmousedown="sendArrowKey(event, 'DOWN')" onmouseup="releaseArrowKey(event, 'DOWN')" ontouchstart="sendArrowKey(event, 'DOWN')" ontouchend="releaseArrowKey(event, 'DOWN')" style="padding: 12px; font-size: 16px;">↓</button>
-              <button class="btn btn-info" onmousedown="sendArrowKey(event, 'RIGHT')" onmouseup="releaseArrowKey(event, 'RIGHT')" ontouchstart="sendArrowKey(event, 'RIGHT')" ontouchend="releaseArrowKey(event, 'RIGHT')" style="padding: 12px; font-size: 16px;">→</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'LEFT')" onmouseup="releaseHoldKey(event, 'LEFT')" ontouchstart="sendHoldKey(event, 'LEFT')" ontouchend="releaseHoldKey(event, 'LEFT')" style="padding: 12px; font-size: 16px;">←</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'DOWN')" onmouseup="releaseHoldKey(event, 'DOWN')" ontouchstart="sendHoldKey(event, 'DOWN')" ontouchend="releaseHoldKey(event, 'DOWN')" style="padding: 12px; font-size: 16px;">↓</button>
+              <button class="btn btn-info" onmousedown="sendHoldKey(event, 'RIGHT')" onmouseup="releaseHoldKey(event, 'RIGHT')" ontouchstart="sendHoldKey(event, 'RIGHT')" ontouchend="releaseHoldKey(event, 'RIGHT')" style="padding: 12px; font-size: 16px;">→</button>
             </div>
           </div>
         </div>
