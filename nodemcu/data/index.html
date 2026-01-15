@@ -354,7 +354,7 @@ STRING Hello World!"></textarea>
       <div class="card" style="position: relative;">
         <button class="modal-close" onclick="closeKeyboardCapture()">×</button>
 
-        <h2>🎹 Keyboard Capture</h2>
+        <h2>Keyboard Capture</h2>
         <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">Real-time keyboard event forwarding</p>
 
         <div class="warning-box">
@@ -364,16 +364,24 @@ STRING Hello World!"></textarea>
         <div class="jiggler-control" style="margin-bottom: 15px;">
           <div class="toggle-switch" id="captureToggle" onclick="toggleKeyboardCapture()"></div>
           <span id="captureStatus">Disabled</span>
+          <span style="color: #6b7280; font-size: 12px; margin-left: 10px;">Press ESC to disable</span>
         </div>
 
-        <div class="instructions">
-          <h3>📖 How to use:</h3>
-          <ul>
+        <!-- Hidden input for mobile keyboard -->
+        <input type="text" id="mobileKeyboardInput" style="position: absolute; left: -9999px; width: 1px; height: 1px;" autocomplete="off">
+
+        <div class="instructions" style="cursor: pointer;" onclick="toggleInstructions()">
+          <h3 style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📖 How to use</span>
+            <span id="instructionsToggle" style="font-size: 20px;">▼</span>
+          </h3>
+          <ul id="instructionsContent" style="display: none;">
             <li><strong>Toggle ON</strong> to start capturing keyboard events</li>
             <li>All keyboard input will be forwarded to the connected computer</li>
             <li>View real-time event history below</li>
             <li><strong>Toggle OFF</strong> to stop capturing</li>
             <li>Press <strong>ESC</strong> key to quickly disable capture</li>
+            <li>On mobile devices, the on-screen keyboard will open automatically</li>
           </ul>
         </div>
 
@@ -503,11 +511,29 @@ STRING Hello World!"></textarea>
       document.body.style.overflow = 'auto';
     }
 
+    function toggleInstructions() {
+      const content = document.getElementById('instructionsContent');
+      const toggle = document.getElementById('instructionsToggle');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    }
+
     function toggleKeyboardCapture() {
       captureEnabled = !captureEnabled;
       const toggle = document.getElementById('captureToggle');
       const status = document.getElementById('captureStatus');
       const indicator = document.getElementById('captureIndicator');
+      const mobileInput = document.getElementById('mobileKeyboardInput');
 
       if (captureEnabled) {
         toggle.classList.add('active');
@@ -515,6 +541,13 @@ STRING Hello World!"></textarea>
         status.style.color = '#10b981';
         indicator.classList.add('active');
         addLog('Keyboard capture ENABLED');
+
+        // On mobile devices, focus hidden input to trigger on-screen keyboard
+        if (isMobileDevice()) {
+          setTimeout(() => {
+            mobileInput.focus();
+          }, 100);
+        }
       } else {
         toggle.classList.remove('active');
         status.textContent = 'Disabled';
@@ -522,6 +555,11 @@ STRING Hello World!"></textarea>
         indicator.classList.remove('active');
         addLog('Keyboard capture DISABLED');
         releaseAllKeys();
+
+        // Blur the mobile input
+        if (isMobileDevice()) {
+          mobileInput.blur();
+        }
       }
     }
 
@@ -689,6 +727,22 @@ STRING Hello World!"></textarea>
     document.addEventListener('keydown', handleKeyboardKeyDown, true);
     document.addEventListener('keyup', handleKeyboardKeyUp, true);
 
+    // Mobile keyboard input handling
+    const mobileInput = document.getElementById('mobileKeyboardInput');
+    mobileInput.addEventListener('input', function(e) {
+      // Clear the input to keep it empty
+      this.value = '';
+    });
+
+    // Keep focus on mobile input when capture is active
+    mobileInput.addEventListener('blur', function() {
+      if (captureEnabled && isMobileDevice()) {
+        setTimeout(() => {
+          this.focus();
+        }, 0);
+      }
+    });
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       if (captureEnabled) {
@@ -696,9 +750,9 @@ STRING Hello World!"></textarea>
       }
     });
 
-    // Release all keys when window loses focus
+    // Release all keys when window loses focus (except on mobile when input is focused)
     window.addEventListener('blur', () => {
-      if (captureEnabled && pressedKeys.size > 0) {
+      if (captureEnabled && pressedKeys.size > 0 && !isMobileDevice()) {
         releaseAllKeys();
       }
     });
