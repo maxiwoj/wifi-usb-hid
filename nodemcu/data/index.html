@@ -5,6 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WiFi USB HID Control</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Keyboard Capture Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: block;
+    }
+
+    .modal-content {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .modal-close:hover {
+      background: #dc2626;
+      transform: rotate(90deg);
+    }
+
+    .capture-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      background: #ef4444;
+      color: white;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
+      z-index: 10000;
+      display: none;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .capture-indicator.active {
+      display: block;
+    }
+
+    .key-history {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .key-event {
+      padding: 5px 10px;
+      margin: 3px 0;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .key-event.keydown {
+      background: #dbeafe;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .key-event.keyup {
+      background: #fef3c7;
+      border-left: 3px solid #f59e0b;
+    }
+
+    .key-event-type {
+      font-weight: bold;
+      min-width: 70px;
+      color: #667eea;
+    }
+
+    .key-event-key {
+      background: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      font-weight: bold;
+    }
+
+    .key-event-modifiers {
+      color: #6b7280;
+      font-size: 11px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .instructions {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #1e40af;
+    }
+
+    .instructions h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .instructions ul {
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+
+    .warning-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #991b1b;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -19,7 +197,7 @@
       </div>
       <div style="display: flex; gap: 10px; align-items: center;">
         <span class="status-badge" id="statusBadge">Connected</span>
-        <button class="btn btn-primary" onclick="location.href='keyboard-capture.html'">🎹 Keyboard Capture</button>
+        <button class="btn btn-primary" onclick="openKeyboardCapture()">🎹 Keyboard Capture</button>
         <button class="btn btn-info" onclick="location.href='manage-files.html'">File Manager</button>
         <button class="btn btn-info" onclick="location.href='/setup'">WiFi Settings</button>
       </div>
@@ -165,6 +343,313 @@ STRING Hello World!"></textarea>
     </div>
   </div>
 
+  <!-- Keyboard Capture Indicator -->
+  <div class="capture-indicator" id="captureIndicator">
+    🎹 CAPTURING KEYBOARD
+  </div>
+
+  <!-- Keyboard Capture Modal -->
+  <div class="modal-overlay" id="keyboardCaptureModal">
+    <div class="modal-content">
+      <div class="card" style="position: relative;">
+        <button class="modal-close" onclick="closeKeyboardCapture()">×</button>
+
+        <h2>🎹 Keyboard Capture</h2>
+        <p style="color: #6b7280; font-size: 14px; margin-bottom: 15px;">Real-time keyboard event forwarding</p>
+
+        <div class="warning-box">
+          <strong>⚠️ Important:</strong> When keyboard capture is active, all your keyboard input will be forwarded to the connected computer. Some browser shortcuts may be captured and not work as expected.
+        </div>
+
+        <div class="jiggler-control" style="margin-bottom: 15px;">
+          <div class="toggle-switch" id="captureToggle" onclick="toggleKeyboardCapture()"></div>
+          <span id="captureStatus">Disabled</span>
+        </div>
+
+        <div class="instructions">
+          <h3>📖 How to use:</h3>
+          <ul>
+            <li><strong>Toggle ON</strong> to start capturing keyboard events</li>
+            <li>All keyboard input will be forwarded to the connected computer</li>
+            <li>View real-time event history below</li>
+            <li><strong>Toggle OFF</strong> to stop capturing</li>
+            <li>Press <strong>ESC</strong> key to quickly disable capture</li>
+          </ul>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Events</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statKeyDown">0</div>
+            <div class="stat-label">Key Down</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statKeyUp">0</div>
+            <div class="stat-label">Key Up</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button class="btn btn-warning" onclick="clearKeyboardHistory()">Clear History</button>
+          <button class="btn btn-danger" onclick="releaseAllKeys()">Release All Keys</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Event History</h2>
+        <div class="key-history" id="keyHistory">
+          <p style="color: #6b7280; text-align: center; padding: 20px;">No events captured yet. Enable capture to start.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
+  <script>
+    // Keyboard Capture Functionality
+    let captureEnabled = false;
+    let pressedKeys = new Set();
+    let eventCount = { total: 0, keydown: 0, keyup: 0 };
+    let eventHistory = [];
+    const MAX_HISTORY = 100;
+
+    // Key mapping for special keys
+    const keyMap = {
+      'Control': 'CTRL',
+      'Shift': 'SHIFT',
+      'Alt': 'ALT',
+      'Meta': 'GUI',
+      'Enter': 'ENTER',
+      'Escape': 'ESC',
+      'Tab': 'TAB',
+      'Backspace': 'BACKSPACE',
+      'Delete': 'DELETE',
+      'ArrowUp': 'UP',
+      'ArrowDown': 'DOWN',
+      'ArrowLeft': 'LEFT',
+      'ArrowRight': 'RIGHT',
+      'Home': 'HOME',
+      'End': 'END',
+      'PageUp': 'PAGEUP',
+      'PageDown': 'PAGEDOWN',
+      'Insert': 'INSERT',
+      'CapsLock': 'CAPSLOCK',
+      ' ': 'SPACE'
+    };
+
+    // Function keys
+    for (let i = 1; i <= 12; i++) {
+      keyMap[`F${i}`] = `F${i}`;
+    }
+
+    function openKeyboardCapture() {
+      document.getElementById('keyboardCaptureModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeKeyboardCapture() {
+      if (captureEnabled) {
+        toggleKeyboardCapture();
+      }
+      document.getElementById('keyboardCaptureModal').classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function toggleKeyboardCapture() {
+      captureEnabled = !captureEnabled;
+      const toggle = document.getElementById('captureToggle');
+      const status = document.getElementById('captureStatus');
+      const indicator = document.getElementById('captureIndicator');
+
+      if (captureEnabled) {
+        toggle.classList.add('active');
+        status.textContent = 'Active';
+        status.style.color = '#10b981';
+        indicator.classList.add('active');
+        addLog('Keyboard capture ENABLED');
+      } else {
+        toggle.classList.remove('active');
+        status.textContent = 'Disabled';
+        status.style.color = '#6b7280';
+        indicator.classList.remove('active');
+        addLog('Keyboard capture DISABLED');
+        releaseAllKeys();
+      }
+    }
+
+    function getKeyCommand(key) {
+      if (keyMap[key]) {
+        return keyMap[key];
+      }
+      if (key.length === 1) {
+        return key;
+      }
+      return null;
+    }
+
+    function handleKeyboardKeyDown(event) {
+      if (!captureEnabled) return;
+
+      const key = event.key;
+      const keyCommand = getKeyCommand(key);
+
+      if (!keyCommand) return;
+
+      // ESC key disables capture
+      if (key === 'Escape') {
+        toggleKeyboardCapture();
+        return;
+      }
+
+      // Prevent duplicate events for held keys
+      const keyId = `${keyCommand}`;
+      if (pressedKeys.has(keyId)) return;
+
+      pressedKeys.add(keyId);
+
+      // Prevent default browser behavior
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Send key press command
+      sendCommand(`KEY_PRESS:${keyCommand}`);
+
+      // Log the event
+      const modifiers = [];
+      if (event.ctrlKey && key !== 'Control') modifiers.push('Ctrl');
+      if (event.shiftKey && key !== 'Shift') modifiers.push('Shift');
+      if (event.altKey && key !== 'Alt') modifiers.push('Alt');
+      if (event.metaKey && key !== 'Meta') modifiers.push('Meta');
+
+      addEventToHistory({
+        type: 'keydown',
+        key: keyCommand,
+        modifiers: modifiers,
+        timestamp: new Date()
+      });
+
+      updateKeyboardStats('keydown');
+    }
+
+    function handleKeyboardKeyUp(event) {
+      if (!captureEnabled) return;
+
+      const key = event.key;
+      const keyCommand = getKeyCommand(key);
+
+      if (!keyCommand) return;
+
+      const keyId = `${keyCommand}`;
+      pressedKeys.delete(keyId);
+
+      // Prevent default browser behavior
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Send key release command
+      sendCommand(`KEY_RELEASE:${keyCommand}`);
+
+      // Log the event
+      const modifiers = [];
+      if (event.ctrlKey && key !== 'Control') modifiers.push('Ctrl');
+      if (event.shiftKey && key !== 'Shift') modifiers.push('Shift');
+      if (event.altKey && key !== 'Alt') modifiers.push('Alt');
+      if (event.metaKey && key !== 'Meta') modifiers.push('Meta');
+
+      addEventToHistory({
+        type: 'keyup',
+        key: keyCommand,
+        modifiers: modifiers,
+        timestamp: new Date()
+      });
+
+      updateKeyboardStats('keyup');
+    }
+
+    function addEventToHistory(event) {
+      eventHistory.unshift(event);
+      if (eventHistory.length > MAX_HISTORY) {
+        eventHistory.pop();
+      }
+      renderKeyboardHistory();
+    }
+
+    function renderKeyboardHistory() {
+      const historyDiv = document.getElementById('keyHistory');
+
+      if (eventHistory.length === 0) {
+        historyDiv.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No events captured yet. Enable capture to start.</p>';
+        return;
+      }
+
+      historyDiv.innerHTML = eventHistory.map(event => {
+        const time = event.timestamp.toLocaleTimeString();
+        const modStr = event.modifiers.length > 0 ? `<span class="key-event-modifiers">(${event.modifiers.join('+')})</span>` : '';
+
+        return `<div class="key-event ${event.type}">
+          <span class="key-event-type">${event.type === 'keydown' ? '⬇ DOWN' : '⬆ UP'}</span>
+          <span class="key-event-key">${event.key}</span>
+          ${modStr}
+          <span style="margin-left: auto; color: #9ca3af; font-size: 11px;">${time}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function updateKeyboardStats(type) {
+      eventCount.total++;
+      if (type === 'keydown') eventCount.keydown++;
+      if (type === 'keyup') eventCount.keyup++;
+
+      document.getElementById('statTotal').textContent = eventCount.total;
+      document.getElementById('statKeyDown').textContent = eventCount.keydown;
+      document.getElementById('statKeyUp').textContent = eventCount.keyup;
+    }
+
+    function clearKeyboardHistory() {
+      if (confirm('Clear event history?')) {
+        eventHistory = [];
+        eventCount = { total: 0, keydown: 0, keyup: 0 };
+        renderKeyboardHistory();
+        document.getElementById('statTotal').textContent = '0';
+        document.getElementById('statKeyDown').textContent = '0';
+        document.getElementById('statKeyUp').textContent = '0';
+        addLog('Keyboard history cleared');
+      }
+    }
+
+    function releaseAllKeys() {
+      sendCommand('KEY_RELEASE_ALL');
+      pressedKeys.clear();
+      addLog('All keys released');
+    }
+
+    // Add event listeners
+    document.addEventListener('keydown', handleKeyboardKeyDown, true);
+    document.addEventListener('keyup', handleKeyboardKeyUp, true);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (captureEnabled) {
+        releaseAllKeys();
+      }
+    });
+
+    // Release all keys when window loses focus
+    window.addEventListener('blur', () => {
+      if (captureEnabled && pressedKeys.size > 0) {
+        releaseAllKeys();
+      }
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('keyboardCaptureModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeKeyboardCapture();
+      }
+    });
+  </script>
 </body>
 </html>
