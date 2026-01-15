@@ -427,6 +427,230 @@ void processCommand(String cmd) {
     Serial1.println("OK:Scrolled");
   }
 
+  // Key press/release for multi-key combinations
+  else if (cmd.startsWith("KEY_PRESS:")) {
+    String key = cmd.substring(10);
+    key.trim();
+
+    // Handle special keys
+    if (key == "CTRL") {
+      Keyboard.press(KEY_LEFT_CTRL);
+    }
+    else if (key == "SHIFT") {
+      Keyboard.press(KEY_LEFT_SHIFT);
+    }
+    else if (key == "ALT") {
+      Keyboard.press(KEY_LEFT_ALT);
+    }
+    else if (key == "GUI" || key == "META" || key == "WIN" || key == "CMD") {
+      Keyboard.press(KEY_LEFT_GUI);
+    }
+    else if (key == "ENTER") {
+      Keyboard.press(KEY_RETURN);
+    }
+    else if (key == "ESC") {
+      Keyboard.press(KEY_ESC);
+    }
+    else if (key == "TAB") {
+      Keyboard.press(KEY_TAB);
+    }
+    else if (key == "BACKSPACE") {
+      Keyboard.press(KEY_BACKSPACE);
+    }
+    else if (key == "DELETE") {
+      Keyboard.press(KEY_DELETE);
+    }
+    else if (key == "SPACE") {
+      Keyboard.press(' ');
+    }
+    else if (key == "UP") {
+      Keyboard.press(KEY_UP_ARROW);
+    }
+    else if (key == "DOWN") {
+      Keyboard.press(KEY_DOWN_ARROW);
+    }
+    else if (key == "LEFT") {
+      Keyboard.press(KEY_LEFT_ARROW);
+    }
+    else if (key == "RIGHT") {
+      Keyboard.press(KEY_RIGHT_ARROW);
+    }
+    else if (key == "HOME") {
+      Keyboard.press(KEY_HOME);
+    }
+    else if (key == "END") {
+      Keyboard.press(KEY_END);
+    }
+    else if (key == "PAGEUP") {
+      Keyboard.press(KEY_PAGE_UP);
+    }
+    else if (key == "PAGEDOWN") {
+      Keyboard.press(KEY_PAGE_DOWN);
+    }
+    else if (key == "INSERT") {
+      Keyboard.press(KEY_INSERT);
+    }
+    else if (key == "CAPSLOCK") {
+      Keyboard.press(KEY_CAPS_LOCK);
+    }
+    // Function keys
+    else if (key == "F1") {
+      Keyboard.press(KEY_F1);
+    }
+    else if (key == "F2") {
+      Keyboard.press(KEY_F2);
+    }
+    else if (key == "F3") {
+      Keyboard.press(KEY_F3);
+    }
+    else if (key == "F4") {
+      Keyboard.press(KEY_F4);
+    }
+    else if (key == "F5") {
+      Keyboard.press(KEY_F5);
+    }
+    else if (key == "F6") {
+      Keyboard.press(KEY_F6);
+    }
+    else if (key == "F7") {
+      Keyboard.press(KEY_F7);
+    }
+    else if (key == "F8") {
+      Keyboard.press(KEY_F8);
+    }
+    else if (key == "F9") {
+      Keyboard.press(KEY_F9);
+    }
+    else if (key == "F10") {
+      Keyboard.press(KEY_F10);
+    }
+    else if (key == "F11") {
+      Keyboard.press(KEY_F11);
+    }
+    else if (key == "F12") {
+      Keyboard.press(KEY_F12);
+    }
+    // Regular character (single char)
+    else if (key.length() == 1) {
+      Keyboard.press(key.charAt(0));
+    }
+
+    Serial1.println("OK:Key pressed: " + key);
+  }
+  else if (cmd.startsWith("KEY_RELEASE:")) {
+    String key = cmd.substring(12);
+    key.trim();
+
+    // Handle special keys
+    if (key == "CTRL") {
+      Keyboard.release(KEY_LEFT_CTRL);
+    }
+    else if (key == "SHIFT") {
+      Keyboard.release(KEY_LEFT_SHIFT);
+    }
+    else if (key == "ALT") {
+      Keyboard.release(KEY_LEFT_ALT);
+    }
+    else if (key == "GUI" || key == "META" || key == "WIN" || key == "CMD") {
+      Keyboard.release(KEY_LEFT_GUI);
+    }
+    else if (key == "ENTER") {
+      Keyboard.release(KEY_RETURN);
+    }
+    else if (key == "ESC") {
+      Keyboard.release(KEY_ESC);
+    }
+    else if (key == "TAB") {
+      Keyboard.release(KEY_TAB);
+    }
+    else if (key == "BACKSPACE") {
+      Keyboard.release(KEY_BACKSPACE);
+    }
+    else if (key == "DELETE") {
+      Keyboard.release(KEY_DELETE);
+    }
+    else if (key == "SPACE") {
+      Keyboard.release(' ');
+    }
+    else if (key == "UP") {
+      Keyboard.release(KEY_UP_ARROW);
+    }
+    else if (key == "DOWN") {
+      Keyboard.release(KEY_DOWN_ARROW);
+    }
+    else if (key == "LEFT") {
+      Keyboard.release(KEY_LEFT_ARROW);
+    }
+    else if (key == "RIGHT") {
+      Keyboard.release(KEY_RIGHT_ARROW);
+    }
+    else if (key == "HOME") {
+      Keyboard.release(KEY_HOME);
+    }
+    else if (key == "END") {
+      Keyboard.release(KEY_END);
+    }
+    else if (key == "PAGEUP") {
+      Keyboard.release(KEY_PAGE_UP);
+    }
+    else if (key == "PAGEDOWN") {
+      Keyboard.release(KEY_PAGE_DOWN);
+    }
+    else if (key == "INSERT") {
+      Keyboard.release(KEY_INSERT);
+    }
+    else if (key == "CAPSLOCK") {
+      Keyboard.release(KEY_CAPS_LOCK);
+    }
+    // Function keys
+    else if (key == "F1") {
+      Keyboard.release(KEY_F1);
+    }
+    else if (key == "F2") {
+      Keyboard.release(KEY_F2);
+    }
+    else if (key == "F3") {
+      Keyboard.release(KEY_F3);
+    }
+    else if (key == "F4") {
+      Keyboard.release(KEY_F4);
+    }
+    else if (key == "F5") {
+      Keyboard.release(KEY_F5);
+    }
+    else if (key == "F6") {
+      Keyboard.release(KEY_F6);
+    }
+    else if (key == "F7") {
+      Keyboard.release(KEY_F7);
+    }
+    else if (key == "F8") {
+      Keyboard.release(KEY_F8);
+    }
+    else if (key == "F9") {
+      Keyboard.release(KEY_F9);
+    }
+    else if (key == "F10") {
+      Keyboard.release(KEY_F10);
+    }
+    else if (key == "F11") {
+      Keyboard.release(KEY_F11);
+    }
+    else if (key == "F12") {
+      Keyboard.release(KEY_F12);
+    }
+    // Regular character (single char)
+    else if (key.length() == 1) {
+      Keyboard.release(key.charAt(0));
+    }
+
+    Serial1.println("OK:Key released: " + key);
+  }
+  else if (cmd == "KEY_RELEASE_ALL") {
+    Keyboard.releaseAll();
+    Serial1.println("OK:All keys released");
+  }
+
   // Delay
   else if (cmd.startsWith("DELAY:")) {
     int ms = cmd.substring(6).toInt();
