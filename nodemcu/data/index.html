@@ -392,6 +392,13 @@ STRING Hello World!"></textarea>
           >
         </div>
 
+        <!-- Manual show keyboard button for mobile devices where auto-detection fails -->
+        <div id="manualMobileButton" style="display: none; margin-bottom: 15px;">
+          <button class="btn btn-info" onclick="showMobileInput()" style="width: 100%;">
+            📱 Show Mobile Keyboard Input
+          </button>
+        </div>
+
         <div class="instructions" style="cursor: pointer;" onclick="toggleInstructions()">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">
             <span>📖 How to use</span>
@@ -545,8 +552,41 @@ STRING Hello World!"></textarea>
     }
 
     function isMobileDevice() {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-             (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+      // Check multiple indicators of mobile device
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+      // Check user agent
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+      if (mobileRegex.test(userAgent.toLowerCase())) {
+        return true;
+      }
+
+      // Check for touch capability (more than 0 touch points)
+      if ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 0) {
+        return true;
+      }
+
+      // Check for touch events
+      if ('ontouchstart' in window || navigator.msMaxTouchPoints) {
+        return true;
+      }
+
+      // Check screen size as fallback (typical mobile width)
+      if (window.innerWidth <= 768) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function showMobileInput() {
+      const mobileInputContainer = document.getElementById('mobileInputContainer');
+      const manualMobileButton = document.getElementById('manualMobileButton');
+      const escHint = document.getElementById('escHint');
+
+      mobileInputContainer.style.display = 'block';
+      manualMobileButton.style.display = 'none';
+      escHint.style.display = 'none';
     }
 
     function toggleKeyboardCapture() {
@@ -557,6 +597,7 @@ STRING Hello World!"></textarea>
       const mobileInputContainer = document.getElementById('mobileInputContainer');
       const mobileInput = document.getElementById('mobileKeyboardInput');
       const escHint = document.getElementById('escHint');
+      const manualMobileButton = document.getElementById('manualMobileButton');
 
       if (captureEnabled) {
         toggle.classList.add('active');
@@ -569,6 +610,9 @@ STRING Hello World!"></textarea>
         if (isMobileDevice()) {
           mobileInputContainer.style.display = 'block';
           escHint.style.display = 'none';
+        } else {
+          // Show manual button for non-detected devices (like some mobile browsers)
+          manualMobileButton.style.display = 'block';
         }
       } else {
         toggle.classList.remove('active');
@@ -579,11 +623,10 @@ STRING Hello World!"></textarea>
         releaseAllKeys();
 
         // Hide mobile input and restore ESC hint
-        if (isMobileDevice()) {
-          mobileInput.blur();
-          mobileInputContainer.style.display = 'none';
-          escHint.style.display = 'inline';
-        }
+        mobileInput.blur();
+        mobileInputContainer.style.display = 'none';
+        manualMobileButton.style.display = 'none';
+        escHint.style.display = 'inline';
       }
     }
 
