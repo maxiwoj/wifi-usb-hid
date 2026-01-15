@@ -404,16 +404,16 @@ STRING Hello World!"></textarea>
               Modifier Keys (tap to press/release):
             </p>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button id="ctrlBtn" class="btn btn-info modifier-btn" onclick="toggleModifier('CTRL')" style="padding: 8px 12px; font-size: 13px;">
+              <button id="ctrlBtn" class="btn btn-info modifier-btn" ontouchstart="toggleModifierKeepFocus(event, 'CTRL')" onclick="toggleModifier('CTRL')" style="padding: 8px 12px; font-size: 13px;">
                 Ctrl
               </button>
-              <button id="altBtn" class="btn btn-info modifier-btn" onclick="toggleModifier('ALT')" style="padding: 8px 12px; font-size: 13px;">
+              <button id="altBtn" class="btn btn-info modifier-btn" ontouchstart="toggleModifierKeepFocus(event, 'ALT')" onclick="toggleModifier('ALT')" style="padding: 8px 12px; font-size: 13px;">
                 Alt
               </button>
-              <button id="shiftBtn" class="btn btn-info modifier-btn" onclick="toggleModifier('SHIFT')" style="padding: 8px 12px; font-size: 13px;">
+              <button id="shiftBtn" class="btn btn-info modifier-btn" ontouchstart="toggleModifierKeepFocus(event, 'SHIFT')" onclick="toggleModifier('SHIFT')" style="padding: 8px 12px; font-size: 13px;">
                 Shift
               </button>
-              <button id="guiBtn" class="btn btn-info modifier-btn" onclick="toggleModifier('GUI')" style="padding: 8px 12px; font-size: 13px;">
+              <button id="guiBtn" class="btn btn-info modifier-btn" ontouchstart="toggleModifierKeepFocus(event, 'GUI')" onclick="toggleModifier('GUI')" style="padding: 8px 12px; font-size: 13px;">
                 <span id="guiLabel">Win</span>
               </button>
             </div>
@@ -437,6 +437,13 @@ STRING Hello World!"></textarea>
               <button class="btn btn-info" onmousedown="sendHoldKey(event, 'DOWN')" onmouseup="releaseHoldKey(event, 'DOWN')" ontouchstart="sendHoldKey(event, 'DOWN')" ontouchend="releaseHoldKey(event, 'DOWN')" style="padding: 12px; font-size: 16px;">↓</button>
               <button class="btn btn-info" onmousedown="sendHoldKey(event, 'RIGHT')" onmouseup="releaseHoldKey(event, 'RIGHT')" ontouchstart="sendHoldKey(event, 'RIGHT')" ontouchend="releaseHoldKey(event, 'RIGHT')" style="padding: 12px; font-size: 16px;">→</button>
             </div>
+          </div>
+
+          <!-- Fullscreen mouse control -->
+          <div style="margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="window.location.href='trackpad-fullscreen.html'" style="width: 100%; padding: 12px; font-size: 14px;">
+              🖱️ Open Fullscreen Mouse Control
+            </button>
           </div>
         </div>
 

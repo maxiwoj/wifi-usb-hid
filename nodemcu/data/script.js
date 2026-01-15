@@ -1131,6 +1131,24 @@ let jigglerEnabled = false;
         }
       };
 
+      // Toggle modifier while trying to keep keyboard open (for touch devices)
+      window.toggleModifierKeepFocus = function(event, key) {
+        event.preventDefault(); // Prevent default to try to keep focus
+        event.stopPropagation();
+
+        // Toggle the modifier
+        window.toggleModifier(key);
+
+        // Try to refocus the input to keep keyboard open
+        const mobileInput = document.getElementById('mobileKeyboardInput');
+        if (mobileInput) {
+          // Use setTimeout to refocus after the touch event completes
+          setTimeout(function() {
+            mobileInput.focus();
+          }, 10);
+        }
+      };
+
       window.sendHoldKey = function(event, key) {
         event.preventDefault(); // Prevent scrolling on mobile
         sendCommand('KEY_PRESS:' + key);
