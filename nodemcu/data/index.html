@@ -256,6 +256,9 @@
 
     <div class="card">
       <h2>Type Text</h2>
+      <p style="color: #6b7280; font-size: 13px; margin-bottom: 10px;">
+        <strong>Note:</strong> Special characters (ą, ę, ć, etc.) may not work with this feature. Use <strong>Keyboard Capture</strong> instead for special characters and ensure the target device has the correct keyboard layout.
+      </p>
       <input type="text" id="typeText" placeholder="Enter text to type...">
       <button class="btn btn-primary" onclick="typeText()">Type</button>
       <button class="btn btn-success" onclick="typeTextEnter()">Type + Enter</button>
@@ -316,6 +319,9 @@
 
     <div class="card">
       <h2>DuckyScript Executor</h2>
+      <p style="color: #6b7280; font-size: 13px; margin-bottom: 10px;">
+        <strong>Note:</strong> STRING command may not work with special characters (ą, ę, ć, etc.). For special characters, use keyboard shortcuts instead (e.g., <code>ALT a</code> for ą on Polish keyboard layout).
+      </p>
       <textarea id="duckyScript" placeholder="Enter DuckyScript here...
 Example:
 GUI r
@@ -359,6 +365,8 @@ STRING Hello World!"></textarea>
 
         <div class="warning-box">
           <strong>⚠️ Important:</strong> When keyboard capture is active, all your keyboard input will be forwarded to the connected computer. Some browser shortcuts may be captured and not work as expected.
+          <br><br>
+          <strong>📝 Special Characters:</strong> The gadget sends physical key codes (e.g., Alt+A). Special characters like ą, ę, ć require the target device to have the appropriate keyboard layout configured (e.g., Polish keyboard layout for Polish characters).
         </div>
 
         <div class="jiggler-control" style="margin-bottom: 15px;">
