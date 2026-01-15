@@ -104,7 +104,7 @@
         <span id="sensitivityValue">1.5x</span>
       </div>
 
-      <button class="btn btn-info" id="toggleDirectionalBtn" onclick="toggleDirectionalControls()" style="margin: 15px 0 10px 0; width: 100%;">▶ Show Directional Controls</button>
+      <button class="btn btn-info" id="toggleDirectionalBtn" onclick="toggleDirectionalControls('')" style="margin: 15px 0 10px 0; width: 100%;">▶ Show Directional Controls</button>
 
       <div id="directionalControls" style="display: none;">
         <h3 style="margin: 10px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
@@ -192,9 +192,14 @@ STRING Hello World!"></textarea>
 
         <!-- Manual show keyboard button -->
         <div id="manualMobileButton" style="margin-bottom: 15px; display: none;">
-          <button id="mobileControlsToggleBtn" class="btn btn-info" onclick="toggleMobileControls()" style="padding: 6px 12px; font-size: 13px;">
-            ▶ Show Mobile Controls
-          </button>
+          <div style="display: flex; gap: 10px;">
+            <button id="mobileControlsToggleBtn" class="btn btn-info" onclick="toggleMobileControls()" style="padding: 6px 12px; font-size: 13px;">
+              ▶ Show Mobile Controls
+            </button>
+            <button id="mouseControlsToggleBtn" class="btn btn-info" onclick="toggleMouseControls()" style="padding: 6px 12px; font-size: 13px;">
+              ▶ Show Mouse Controls
+            </button>
+          </div>
         </div>
 
         <!-- Mobile keyboard input - visible on mobile for iOS compatibility -->
@@ -269,6 +274,43 @@ STRING Hello World!"></textarea>
             </button>
           </div>
         </div>
+
+        <div id="mouseControlsContainer" style="display: none; margin-bottom: 15px;">
+          <h3 style="margin-bottom: 10px; font-size: 16px; color: #667eea;">Live Trackpad</h3>
+          <div class="trackpad" id="modal_trackpad">
+            <div class="trackpad-info">Drag to move mouse • Click to click • Double-click to double-click</div>
+            <div class="trackpad-cursor" id="modal_trackpadCursor"></div>
+          </div>
+
+          <div class="sensitivity-control">
+            <label style="min-width: 80px;">Sensitivity:</label>
+            <input type="range" id="modal_sensitivity" min="0.5" max="10" step="0.1" value="1.5">
+            <span id="modal_sensitivityValue">1.5x</span>
+          </div>
+
+          <button class="btn btn-info" id="modal_toggleDirectionalBtn" onclick="toggleDirectionalControls('modal_')" style="margin: 15px 0 10px 0; width: 100%;">▶ Show Directional Controls</button>
+
+          <div id="modal_directionalControls" style="display: none;">
+            <h3 style="margin: 10px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
+            <div class="mouse-grid">
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,-10')">↖</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,-10')">↑</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,-10')">↗</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,0')">←</button>
+              <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Click</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,0')">→</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,10')">↙</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,10')">↓</button>
+              <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,10')">↘</button>
+            </div>
+            <div style="margin-top: 10px;">
+              <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Left Click</button>
+              <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
+              <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
+            </div>
+          </div>
+        </div>
+
 
         <div class="instructions" style="cursor: pointer;" onclick="toggleInstructions()">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">

@@ -330,11 +330,13 @@ let jigglerEnabled = false;
     }
 
     // Trackpad functionality
-    (function() {
-      const trackpad = document.getElementById('trackpad');
-      const cursor = document.getElementById('trackpadCursor');
-      const sensitivitySlider = document.getElementById('sensitivity');
-      const sensitivityValue = document.getElementById('sensitivityValue');
+    function initTrackpad(prefix = '') {
+      const trackpad = document.getElementById(prefix + 'trackpad');
+      if (!trackpad) return;
+
+      const cursor = document.getElementById(prefix + 'trackpadCursor');
+      const sensitivitySlider = document.getElementById(prefix + 'sensitivity');
+      const sensitivityValue = document.getElementById(prefix + 'sensitivityValue');
 
       let isDragging = false;
       let lastX = 0;
@@ -549,7 +551,11 @@ let jigglerEnabled = false;
 
       // Initialize sensitivity display
       updateSensitivityDisplay();
-    })();
+    }
+
+    // Initialize both trackpads
+    initTrackpad(); // For the main trackpad
+    initTrackpad('modal_'); // For the modal trackpad
 
     // Custom OS Management Functions
     function loadCustomOS() {
@@ -792,9 +798,9 @@ let jigglerEnabled = false;
       });
     }
 
-    function toggleDirectionalControls() {
-      const controls = document.getElementById('directionalControls');
-      const button = document.getElementById('toggleDirectionalBtn');
+    function toggleDirectionalControls(prefix = '') {
+      const controls = document.getElementById(prefix + 'directionalControls');
+      const button = document.getElementById(prefix + 'toggleDirectionalBtn');
 
       if (controls.style.display === 'none') {
         controls.style.display = 'block';
@@ -823,6 +829,21 @@ let jigglerEnabled = false;
         return null;
       }
     }
+    
+    window.toggleMouseControls = function() {
+      const mouseControlsContainer = document.getElementById('mouseControlsContainer');
+      const toggleBtn = document.getElementById('mouseControlsToggleBtn');
+
+      if (mouseControlsContainer.style.display === 'none') {
+        // Show controls
+        mouseControlsContainer.style.display = 'block';
+        toggleBtn.textContent = '▼ Hide Mouse Controls';
+      } else {
+        // Hide controls
+        mouseControlsContainer.style.display = 'none';
+        toggleBtn.textContent = '▶ Show Mouse Controls';
+      }
+    };
 
     function loadSelectedOS() {
       try {
@@ -1202,6 +1223,7 @@ let jigglerEnabled = false;
           // Hide mobile input and restore ESC hint
           mobileInput.blur();
           mobileInputContainer.style.display = 'none';
+          document.getElementById('mouseControlsContainer').style.display = 'none';
           manualMobileButton.style.display = 'none';
           escHint.style.display = 'inline';
 
@@ -1209,6 +1231,10 @@ let jigglerEnabled = false;
           const toggleBtn = document.getElementById('mobileControlsToggleBtn');
           if (toggleBtn) {
             toggleBtn.textContent = '▶ Show Mobile Controls';
+          }
+          const mouseToggleBtn = document.getElementById('mouseControlsToggleBtn');
+          if (mouseToggleBtn) {
+            mouseToggleBtn.textContent = '▶ Show Mouse Controls';
           }
         }
       };
