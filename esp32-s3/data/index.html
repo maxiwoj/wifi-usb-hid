@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi USB HID Control</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>WiFi USB HID Control</h1>
+        <div style="font-size: 13px; color: #6b7280; margin-top: 5px;">
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">IP:</strong> <span id="deviceIP" style="font-family: monospace;">Loading...</span></span> &nbsp;|&nbsp;
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">Mode:</strong> <span id="wifiMode">Loading...</span></span> &nbsp;|&nbsp;
+          <span style="white-space: nowrap;"><strong style="color: #667eea;">Network:</strong> <span id="networkSSID">Loading...</span></span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="status-badge" id="statusBadge">Connected</span>
+        <button class="btn btn-info" onclick="location.href='manage-files.html'">File Manager</button>
+        <button class="btn btn-info" onclick="location.href='/setup'">WiFi Settings</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>OS Selection</h2>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <select id="osSelect" style="flex: 1; margin: 5px">
+          <option value="Windows">Windows</option>
+          <option value="MacOS">MacOS</option>
+          <option value="Linux">Linux</option>
+        </select>
+        <button class="btn btn-primary" onclick="location.href='manage-os.html'" style="white-space: nowrap;">Manage OS</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Mouse Jiggler</h2>
+      <div class="jiggler-control">
+        <div class="toggle-switch" id="jigglerToggle" onclick="toggleJiggler()"></div>
+        <span id="jigglerStatus">Disabled</span>
+      </div>
+
+      <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1 1 95px; min-width: 95px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px; white-space: nowrap;">Type:</label>
+          <select id="jigglerType" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; height: 38px;">
+            <option value="simple">Simple</option>
+            <option value="circles">Circles</option>
+            <option value="random">Random</option>
+          </select>
+        </div>
+
+        <div style="flex: 0.7 1 85px; min-width: 85px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px; white-space: nowrap;">Diameter (px):</label>
+          <input type="number" id="jigglerDiameter" min="1" max="50" value="2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; height: 38px; box-sizing: border-box;">
+        </div>
+
+        <div style="flex: 0.7 1 85px; min-width: 85px;">
+          <label style="display: block; margin-bottom: 5px; color: #667eea; font-weight: 500; font-size: 14px; white-space: nowrap;">Delay (ms):</label>
+          <input type="number" id="jigglerDelay" min="100" max="60000" step="100" value="2000" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; height: 38px; box-sizing: border-box;">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-controls">
+        <h2 style="margin: 0;">Quick Actions</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-actions.html'" style="padding: 8px 16px; font-size: 14px;">Manage Actions</button>
+      </div>
+      <div class="button-grid" id="quickActions">
+        <!-- Buttons will be dynamically generated based on OS selection -->
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Type Text</h2>
+      <input type="text" id="typeText" placeholder="Enter text to type...">
+      <button class="btn btn-primary" onclick="typeText()">Type</button>
+      <button class="btn btn-success" onclick="typeTextEnter()">Type + Enter</button>
+      <button class="btn btn-warning" onclick="sendCommand('BACKSPACE')">Backspace</button>
+    </div>
+
+    <div class="card">
+      <h2>Mouse Control</h2>
+
+      <h3 style="margin-bottom: 10px; font-size: 16px; color: #667eea;">Live Trackpad</h3>
+      <div class="trackpad" id="trackpad">
+        <div class="trackpad-info">Drag to move mouse • Click to click • Double-click to double-click</div>
+        <div class="trackpad-cursor" id="trackpadCursor"></div>
+      </div>
+
+      <button class="btn btn-primary" id="fullscreenBtn" onclick="window.location.href='trackpad-fullscreen.html'" style="margin: 10px auto; display: block; max-width: 300px; width: 100%;">
+        📱 Go Fullscreen
+      </button>
+
+      <div class="sensitivity-control">
+        <label style="min-width: 80px;">Sensitivity:</label>
+        <input type="range" id="sensitivity" min="0.5" max="10" step="0.1" value="1.5">
+        <span id="sensitivityValue">1.5x</span>
+      </div>
+
+      <button class="btn btn-info" id="toggleDirectionalBtn" onclick="toggleDirectionalControls()" style="margin: 15px 0 10px 0; width: 100%;">▶ Show Directional Controls</button>
+
+      <div id="directionalControls" style="display: none;">
+        <h3 style="margin: 10px 0 10px 0; font-size: 16px; color: #667eea;">Directional Control</h3>
+        <div class="mouse-grid">
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,-10')">↖</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,-10')">↑</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,-10')">↗</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,0')">←</button>
+          <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Click</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,0')">→</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:-10,10')">↙</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:0,10')">↓</button>
+          <button class="btn btn-info" onclick="sendCommand('MOUSE_MOVE:10,10')">↘</button>
+        </div>
+        <div style="margin-top: 10px;">
+          <button class="btn btn-success" onclick="sendCommand('MOUSE_LEFT')">Left Click</button>
+          <button class="btn btn-warning" onclick="sendCommand('MOUSE_RIGHT')">Right Click</button>
+          <button class="btn btn-primary" onclick="sendCommand('MOUSE_DOUBLE')">Double Click</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-controls">
+        <h2 style="margin: 0;">Quick Scripts</h2>
+        <button class="btn btn-primary" onclick="location.href='manage-scripts.html'" style="padding: 8px 16px; font-size: 14px;">Manage Scripts</button>
+      </div>
+      <div class="button-grid" id="quickScripts">
+        <!-- Buttons will be dynamically generated based on OS selection -->
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>DuckyScript Executor</h2>
+      <textarea id="duckyScript" placeholder="Enter DuckyScript here...
+Example:
+GUI r
+DELAY 500
+STRING notepad
+ENTER
+DELAY 1000
+STRING Hello World!"></textarea>
+      <div class="script-controls">
+        <button class="btn btn-danger" onclick="executeScript()">Execute Script</button>
+        <input type="text" id="scriptName" placeholder="Script name..." style="flex: 1; margin: 0;">
+        <button class="btn btn-success" onclick="saveScript()">Save Script</button>
+      </div>
+
+      <h3 style="margin: 20px 0 10px 0; font-size: 16px; color: #667eea;">Saved Scripts</h3>
+      <button class="btn btn-info" onclick="loadSavedScripts()" style="margin-bottom: 10px;">Refresh List</button>
+      <div id="savedScriptsList" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">No saved scripts. Click "Refresh List" to load.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
