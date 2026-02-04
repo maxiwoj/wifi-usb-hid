@@ -99,9 +99,15 @@ Open `config.h` and verify/adjust these pins based on your board's documentation
 1. Upload the sketch: **Sketch > Upload**
 2. Upload web files to LittleFS (see detailed instructions below)
 
-## Uploading LittleFS Data (Web Interface Files)
+## Uploading Web Interface Files (LittleFS or SD Card)
 
-The web interface files (HTML, CSS, JS) must be uploaded to the ESP32-S3's LittleFS filesystem for the web interface to function.
+The web interface files (HTML, CSS, JS) and configuration files must be available for the device to function. You have two options:
+
+### Option 1: Using an SD Card (Recommended for T-Dongle-S3)
+If you are using a LILYGO T-Dongle-S3 with a microSD card, you can simply copy the contents of the `data` directory from this project to the root of your SD card. The device will automatically detect the SD card and serve the files from there, prioritizing it over internal storage.
+
+### Option 2: Using LittleFS (Internal Flash)
+If you don't use an SD card, the files must be uploaded to the ESP32-S3's internal LittleFS filesystem.
 
 For detailed, step-by-step instructions on how to install the LittleFS upload plugin and upload your data, please refer to the **[LittleFS Setup Guide](../docs/LITTLEFS_SETUP.md)** in the main project directory.
 

@@ -49,6 +49,12 @@ See **[FEATURES.md](docs/FEATURES.md)** for a detailed description of each featu
 **Optional:**
 - 128x64 I2C OLED display - Connect to D3 (SDA) and D4 (SCL) on NodeMCU
 
+![Connected Hardware with Display](docs/resource/display_connected_pic.jpeg)
+  *NodeMCU and Pro Micro with optional OLED display*
+
+![Assembled Hardware in a small box](docs/resource/assembled.jpeg)
+*NodeMCU and Pro Micro with optional OLED display assembled in a small 3d printed box*
+
 ### Option 2: All-in-One (ESP32-S3)
 **Recommended:**
 - **Lilygo T-Dongle-S3**: A compact USB-dongle form factor with built-in 0.96" LCD and microSD card slot.
@@ -58,12 +64,6 @@ See **[FEATURES.md](docs/FEATURES.md)** for a detailed description of each featu
 *Lilygo T-Dongle-S3 All-in-One Solution*
 
 See the **[ESP32-S3 Sub-project README](esp32-s3/README.md)** for specific setup instructions for this hardware.
-
-![Connected Hardware with Display](docs/resource/display_connected_pic.jpeg)
-*NodeMCU and Pro Micro with optional OLED display*
-
-![Assembled Hardware in a small box](docs/resource/assembled.jpeg)
-*NodeMCU and Pro Micro with optional OLED display assembled in a small 3d printed box*
 
 ## Software
 
