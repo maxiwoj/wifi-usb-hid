@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <TFT_eSPI.h>
 #include "config.h"
+#include "littlefs_manager.h"
 
 // TFT_eSPI display instance
 TFT_eSPI display = TFT_eSPI();
@@ -23,25 +24,135 @@ extern String currentSSID;
 #define COLOR_YELLOW  TFT_YELLOW
 #define COLOR_ORANGE  TFT_ORANGE
 
+// Helper to read 2 or 4 byte values from file (Little Endian)
+uint16_t read16(fs::File &f) {
+  uint16_t result;
+  f.read((uint8_t *)&result, sizeof(result));
+  return result;
+}
+
+uint32_t read32(fs::File &f) {
+  uint32_t result;
+  f.read((uint8_t *)&result, sizeof(result));
+  return result;
+}
+
+bool drawBmp(const char *filename, int16_t x, int16_t y) {
+  if (!storageAvailable || !storageFS) return false;
+
+  fs::File bmpFile = storageFS->open(filename, "r");
+  if (!bmpFile) {
+    Serial.println("BMP file not found: " + String(filename));
+    return false;
+  }
+
+  // Check BMP signature
+  if (read16(bmpFile) != 0x4D42) {
+    Serial.println("Not a valid BMP file");
+    bmpFile.close();
+    return false;
+  }
+
+  read32(bmpFile); // File size
+  read32(bmpFile); // Reserved
+  uint32_t offset = read32(bmpFile); // Start of image data
+  uint32_t headerSize = read32(bmpFile); // Header size
+  int32_t width = read32(bmpFile);
+  int32_t height = read32(bmpFile);
+  uint16_t planes = read16(bmpFile);
+  uint16_t depth = read16(bmpFile);
+  uint32_t compression = read32(bmpFile);
+
+  // Support BI_RGB (0) and BI_BITFIELDS (3)
+  if (planes != 1 || (depth != 24 && depth != 32) || (compression != 0 && compression != 3)) {
+    Serial.print("Unsupported BMP: Depth="); Serial.print(depth);
+    Serial.print(", Comp="); Serial.println(compression);
+    bmpFile.close();
+    return false;
+  }
+
+  bool topDown = (height < 0);
+  if (topDown) height = -height;
+
+  bmpFile.seek(offset);
+
+  int bytesPerPixel = depth / 8;
+  int rowPadding = (4 - (width * bytesPerPixel) % 4) % 4;
+  uint16_t lineBuffer[width];
+
+  display.startWrite();
+  display.setSwapBytes(true); // Ensure 16-bit colors are swapped for ST7735
+  
+  for (int row = 0; row < height; row++) {
+    // Determine target Y based on orientation
+    int32_t targetY = topDown ? (y + row) : (y + height - 1 - row);
+    
+    // Skip if outside screen bounds
+    if (targetY < 0 || targetY >= display.height()) {
+       bmpFile.seek(bmpFile.position() + (width * bytesPerPixel) + rowPadding);
+       continue;
+    }
+
+    for (int col = 0; col < width; col++) {
+      uint8_t b = bmpFile.read();
+      uint8_t g = bmpFile.read();
+      uint8_t r = bmpFile.read();
+      if (depth == 32) bmpFile.read(); // Skip alpha
+      
+      // BMP is usually BGR. color565 expects R, G, B
+      lineBuffer[col] = display.color565(r, g, b);
+    }
+    bmpFile.seek(bmpFile.position() + rowPadding);
+    display.pushImage(x, targetY, width, 1, lineBuffer);
+  }
+  display.setSwapBytes(false); // Reset to default
+  display.endWrite();
+
+  bmpFile.close();
+  return true;
+}
+
 // Internal function to show startup logo
 void showStartupLogo() {
   display.fillScreen(COLOR_BLACK);
-  display.setTextColor(COLOR_WHITE);
+  
+  const char* logoPath = "/logo.bmp";
+  if (!storageFS->exists(logoPath)) {
+    logoPath = "/www/logo.bmp";
+  }
 
-  // Title (large text)
-  display.setTextSize(2);
-  // Center "WiFi USB"
-  display.setCursor(10, 20);
-  display.println("WiFi HID");
+  bool logoDrawn = false;
+  if (storageAvailable && storageFS && storageFS->exists(logoPath)) {
+    // Read dimensions for centering
+    fs::File file = storageFS->open(logoPath, "r");
+    if (file) {
+      file.seek(18);
+      int32_t w = read32(file);
+      int32_t h = read32(file);
+      if (h < 0) h = -h;
+      file.close();
+      
+      int16_t x = (display.width() - w) / 2;
+      int16_t y = (display.height() - h) / 2;
+      logoDrawn = drawBmp(logoPath, x, y);
+    }
+  }
 
-  // Subtitle (small text)
-  display.setTextSize(1);
-  display.setCursor(40, 50);
-  display.setTextColor(COLOR_CYAN);
-  display.println("Booting...");
+  if (!logoDrawn) {
+    // Fallback if no BMP found
+    display.setTextColor(COLOR_WHITE);
+    display.setTextSize(2);
+    display.setCursor(10, 20);
+    display.println("WiFi HID");
+    display.setTextSize(1);
+    display.setCursor(40, 50);
+    display.setTextColor(COLOR_CYAN);
+    display.println("Booting...");
+  }
 
-  delay(1500);
+  delay(2000);
 }
+
 
 void setupDisplay() {
   Serial.println("Initializing TFT display with TFT_eSPI...");

@@ -54,11 +54,11 @@ void setup() {
     startAPMode();
   }
 
-  // Initialize ST7735 LCD display
-  setupDisplay();
-
   // Initialize Storage (SD Card or LittleFS)
   setupStorage();
+
+  // Initialize ST7735 LCD display
+  setupDisplay();
 
   // Setup web server
   setupWebServer();
