@@ -1,31 +1,71 @@
 #include "littlefs_manager.h"
 #include <LittleFS.h>
+#include <SD_MMC.h>
 #include "config.h"
 
-bool littlefsAvailable = false;
+bool storageAvailable = false;
+bool usingSD = false;
+fs::FS* storageFS = nullptr;
 
-void setupLittleFS() {
-    littlefsAvailable = LittleFS.begin();
-    if (littlefsAvailable) {
-        Serial.println("LittleFS mounted successfully");
+void setupStorage() {
+    // Try to initialize SD Card first
+    Serial.println("Attempting to mount SD Card...");
+    SD_MMC.setPins(SD_MMC_CLK, SD_MMC_CMD, SD_MMC_D0, SD_MMC_D1, SD_MMC_D2, SD_MMC_D3);
+    
+    // Attempt to mount SD card (mount point /sdcard, mode 1bit=false for 4-bit, format=false)
+    if (SD_MMC.begin("/sdcard", false)) {
+        Serial.println("SD Card mounted successfully");
+        storageAvailable = true;
+        usingSD = true;
+        storageFS = &SD_MMC;
+        
+        uint8_t cardType = SD_MMC.cardType();
+        if(cardType == CARD_NONE){
+             Serial.println("No SD Card attached");
+             storageAvailable = false;
+             usingSD = false;
+        } else {
+             Serial.print("SD Card Type: ");
+             if(cardType == CARD_MMC) Serial.println("MMC");
+             else if(cardType == CARD_SD) Serial.println("SDSC");
+             else if(cardType == CARD_SDHC) Serial.println("SDHC");
+             else Serial.println("UNKNOWN");
+        }
+    } 
+    
+    if (!storageAvailable) {
+        Serial.println("SD Card mount failed or not present. Falling back to LittleFS...");
+        
+        // Fallback to LittleFS
+        if (LittleFS.begin(true)) { // true = format if failed
+            Serial.println("LittleFS mounted successfully");
+            storageAvailable = true;
+            usingSD = false;
+            storageFS = &LittleFS;
+        } else {
+            Serial.println("LittleFS initialization failed - script storage will not be available");
+            Serial.println("To enable LittleFS: Tools > ESP32 Sketch Data Upload in Arduino IDE");
+            Serial.println("Server will continue without storage support");
+            storageFS = nullptr;
+        }
+    }
 
-        // Check LittleFS info (ESP32 API)
-        Serial.print("LittleFS Total bytes: ");
-        Serial.println(LittleFS.totalBytes());
-        Serial.print("LittleFS Used bytes: ");
-        Serial.println(LittleFS.usedBytes());
+    if (storageAvailable) {
+        size_t total = 0, used = 0;
+        getFilesystemInfo(total, used);
+        Serial.print("Storage Total bytes: ");
+        Serial.println(total);
+        Serial.print("Storage Used bytes: ");
+        Serial.println(used);
 
-        Serial.println("LittleFS contents:");
-        File root = LittleFS.open("/");
+        Serial.println("Storage contents:");
+        File root = storageFS->open("/");
         File file = root.openNextFile();
         while (file) {
+            Serial.print("  ");
             Serial.println(file.name());
             file = root.openNextFile();
         }
-    } else {
-        Serial.println("LittleFS initialization failed - script storage will not be available");
-        Serial.println("To enable LittleFS: Tools > ESP32 Sketch Data Upload in Arduino IDE");
-        Serial.println("Server will continue without LittleFS support");
     }
 }
 
@@ -46,14 +86,14 @@ String getScriptFilename(String name) {
 }
 
 bool saveScriptToFile(String name, String script) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for saving script");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for saving script");
     return false;
   }
 
   String filename = getScriptFilename(name);
 
-  File file = LittleFS.open(filename, "w");
+  File file = storageFS->open(filename, "w");
   if (!file) {
     Serial.println("Failed to open file for writing: " + filename);
     return false;
@@ -68,14 +108,14 @@ bool saveScriptToFile(String name, String script) {
 }
 
 String loadScriptFromFile(String name) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for loading script");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for loading script");
     return "";
   }
 
   String filename = getScriptFilename(name);
 
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     Serial.println("Failed to open file for reading: " + filename);
     return "";
@@ -91,15 +131,15 @@ String loadScriptFromFile(String name) {
 }
 
 bool deleteScriptFile(String name) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for deleting script");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for deleting script");
     return false;
   }
 
   String filename = getScriptFilename(name);
 
-  if (LittleFS.exists(filename)) {
-    LittleFS.remove(filename);
+  if (storageFS->exists(filename)) {
+    storageFS->remove(filename);
     Serial.println("Script deleted: " + filename);
     return true;
   }
@@ -109,8 +149,11 @@ bool deleteScriptFile(String name) {
 
 String getScriptNameFromFilename(String filename) {
   // Extract name from "/scripts_<name>.txt"
+  // Remove leading slash if present
+  if (filename.startsWith("/")) filename = filename.substring(1);
+  
   if (filename.startsWith("scripts_") && filename.endsWith(".txt")) {
-    String name = filename.substring(8); // Skip "/scripts_"
+    String name = filename.substring(8); // Skip "scripts_"
     name = name.substring(0, name.length() - 4); // Remove ".txt"
     name.replace("_", " ");
     return name;
@@ -130,8 +173,8 @@ String getQuickActionsFilename(String os) {
 }
 
 bool saveQuickAction(String os, String cmd, String label, String desc, String btnClass) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for saving quick action");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for saving quick action");
     return false;
   }
 
@@ -139,8 +182,8 @@ bool saveQuickAction(String os, String cmd, String label, String desc, String bt
 
   // Load existing actions
   String content = "";
-  if (LittleFS.exists(filename)) {
-    File file = LittleFS.open(filename, "r");
+  if (storageFS->exists(filename)) {
+    File file = storageFS->open(filename, "r");
     if (file) {
       while (file.available()) {
         content += (char)file.read();
@@ -180,7 +223,7 @@ bool saveQuickAction(String os, String cmd, String label, String desc, String bt
   newContent += cmd + "|" + label + "|" + desc + "|" + btnClass + "\n";
 
   // Save to file
-  File file = LittleFS.open(filename, "w");
+  File file = storageFS->open(filename, "w");
   if (!file) {
     Serial.println("Failed to open file for writing: " + filename);
     return false;
@@ -194,17 +237,17 @@ bool saveQuickAction(String os, String cmd, String label, String desc, String bt
 }
 
 String loadQuickActions(String os) {
-  if (!littlefsAvailable) {
+  if (!storageAvailable || !storageFS) {
     return "";
   }
 
   String filename = getQuickActionsFilename(os);
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return "";
   }
 
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     Serial.println("Failed to open file for reading: " + filename);
     return "";
@@ -220,19 +263,19 @@ String loadQuickActions(String os) {
 }
 
 bool deleteQuickAction(String os, String cmd) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for deleting quick action");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for deleting quick action");
     return false;
   }
 
   String filename = getQuickActionsFilename(os);
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return false;
   }
 
   // Load existing actions
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     return false;
   }
@@ -280,7 +323,7 @@ bool deleteQuickAction(String os, String cmd) {
   }
 
   // Save back to file
-  file = LittleFS.open(filename, "w");
+  file = storageFS->open(filename, "w");
   if (!file) {
     return false;
   }
@@ -293,15 +336,15 @@ bool deleteQuickAction(String os, String cmd) {
 }
 
 bool deleteAllQuickActions(String os) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available");
     return false;
   }
 
   String filename = getQuickActionsFilename(os);
 
-  if (LittleFS.exists(filename)) {
-    LittleFS.remove(filename);
+  if (storageFS->exists(filename)) {
+    storageFS->remove(filename);
     Serial.println("All quick actions deleted for: " + os);
     return true;
   }
@@ -312,8 +355,8 @@ bool deleteAllQuickActions(String os) {
 // Custom OS Management Functions
 
 bool addCustomOS(String osName) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for saving custom OS");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for saving custom OS");
     return false;
   }
 
@@ -321,8 +364,8 @@ bool addCustomOS(String osName) {
 
   // Load existing OS list
   String content = "";
-  if (LittleFS.exists(filename)) {
-    File file = LittleFS.open(filename, "r");
+  if (storageFS->exists(filename)) {
+    File file = storageFS->open(filename, "r");
     if (file) {
       while (file.available()) {
         content += (char)file.read();
@@ -353,7 +396,7 @@ bool addCustomOS(String osName) {
   content += osName + "\n";
 
   // Save to file
-  File file = LittleFS.open(filename, "w");
+  File file = storageFS->open(filename, "w");
   if (!file) {
     Serial.println("Failed to open file for writing: " + filename);
     return false;
@@ -367,19 +410,19 @@ bool addCustomOS(String osName) {
 }
 
 bool deleteCustomOS(String osName) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for deleting custom OS");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for deleting custom OS");
     return false;
   }
 
   String filename = "/customos.txt";
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return false;
   }
 
   // Load existing OS list
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     return false;
   }
@@ -419,7 +462,7 @@ bool deleteCustomOS(String osName) {
   }
 
   // Save back to file
-  file = LittleFS.open(filename, "w");
+  file = storageFS->open(filename, "w");
   if (!file) {
     return false;
   }
@@ -435,17 +478,17 @@ bool deleteCustomOS(String osName) {
 }
 
 String loadCustomOSList() {
-  if (!littlefsAvailable) {
+  if (!storageAvailable || !storageFS) {
     return "";
   }
 
   String filename = "/customos.txt";
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return "";
   }
 
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     Serial.println("Failed to open file for reading: " + filename);
     return "";
@@ -472,8 +515,8 @@ String getQuickScriptsFilename(String os) {
 }
 
 bool saveQuickScript(String os, String id, String label, String script, String btnClass) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for saving quick script");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for saving quick script");
     return false;
   }
 
@@ -481,8 +524,8 @@ bool saveQuickScript(String os, String id, String label, String script, String b
 
   // Load existing scripts
   String content = "";
-  if (LittleFS.exists(filename)) {
-    File file = LittleFS.open(filename, "r");
+  if (storageFS->exists(filename)) {
+    File file = storageFS->open(filename, "r");
     if (file) {
       while (file.available()) {
         content += (char)file.read();
@@ -526,7 +569,7 @@ bool saveQuickScript(String os, String id, String label, String script, String b
   newContent += id + "|" + label + "|" + escapedScript + "|" + btnClass + "\n";
 
   // Save to file
-  File file = LittleFS.open(filename, "w");
+  File file = storageFS->open(filename, "w");
   if (!file) {
     Serial.println("Failed to open file for writing: " + filename);
     return false;
@@ -540,17 +583,17 @@ bool saveQuickScript(String os, String id, String label, String script, String b
 }
 
 String loadQuickScripts(String os) {
-  if (!littlefsAvailable) {
+  if (!storageAvailable || !storageFS) {
     return "";
   }
 
   String filename = getQuickScriptsFilename(os);
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return "";
   }
 
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     Serial.println("Failed to open file for reading: " + filename);
     return "";
@@ -566,19 +609,19 @@ String loadQuickScripts(String os) {
 }
 
 bool deleteQuickScript(String os, String id) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available for deleting quick script");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available for deleting quick script");
     return false;
   }
 
   String filename = getQuickScriptsFilename(os);
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     return false;
   }
 
   // Load existing scripts
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     return false;
   }
@@ -626,7 +669,7 @@ bool deleteQuickScript(String os, String id) {
   }
 
   // Save back to file
-  file = LittleFS.open(filename, "w");
+  file = storageFS->open(filename, "w");
   if (!file) {
     return false;
   }
@@ -639,15 +682,15 @@ bool deleteQuickScript(String os, String id) {
 }
 
 bool deleteAllQuickScripts(String os) {
-  if (!littlefsAvailable) {
-    Serial.println("LittleFS not available");
+  if (!storageAvailable || !storageFS) {
+    Serial.println("Storage not available");
     return false;
   }
 
   String filename = getQuickScriptsFilename(os);
 
-  if (LittleFS.exists(filename)) {
-    LittleFS.remove(filename);
+  if (storageFS->exists(filename)) {
+    storageFS->remove(filename);
     Serial.println("All quick scripts deleted for: " + os);
     return true;
   }
@@ -684,13 +727,13 @@ String sanitizeFilename(String filename) {
 }
 
 bool hasAvailableSpace(size_t requiredBytes) {
-  if (!littlefsAvailable) {
+  if (!storageAvailable || !storageFS) {
     return false;
   }
 
-  // ESP32 LittleFS API
-  size_t totalBytes = LittleFS.totalBytes();
-  size_t usedBytes = LittleFS.usedBytes();
+  size_t totalBytes = 0;
+  size_t usedBytes = 0;
+  getFilesystemInfo(totalBytes, usedBytes);
 
   if (totalBytes == 0) {
     return false;
@@ -705,13 +748,17 @@ bool hasAvailableSpace(size_t requiredBytes) {
 }
 
 bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes) {
-  if (!littlefsAvailable) {
+  if (!storageAvailable) {
     return false;
   }
 
-  // ESP32 LittleFS API
-  totalBytes = LittleFS.totalBytes();
-  usedBytes = LittleFS.usedBytes();
+  if (usingSD) {
+     totalBytes = SD_MMC.totalBytes();
+     usedBytes = SD_MMC.usedBytes();
+  } else {
+     totalBytes = LittleFS.totalBytes();
+     usedBytes = LittleFS.usedBytes();
+  }
 
   if (totalBytes == 0) {
     return false;

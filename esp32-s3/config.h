@@ -57,6 +57,14 @@
  #define TFT_SCLK  5    // SPI Clock
  #define TFT_BL    38   // Backlight pin
 
+// ===== SD Card Pins (SD_MMC) =====
+#define SD_MMC_D0   14
+#define SD_MMC_D1   17
+#define SD_MMC_D2   21
+#define SD_MMC_D3   18
+#define SD_MMC_CLK  12
+#define SD_MMC_CMD  16
+
 // ===== Alternative pinout (other ESP32-S3 dongles) =====
 // Uncomment these and comment out the above if using a different board
 // #define TFT_CS    10   // Chip select

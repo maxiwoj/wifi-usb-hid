@@ -2,8 +2,9 @@
 #define LITTLEFS_MANAGER_H
 
 #include <Arduino.h>
+#include <FS.h>
 
-void setupLittleFS();
+void setupStorage();
 bool saveScriptToFile(String name, String script);
 String loadScriptFromFile(String name);
 bool deleteScriptFile(String name);
@@ -32,6 +33,8 @@ String sanitizeFilename(String filename);
 bool hasAvailableSpace(size_t requiredBytes);
 bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes);
 
-extern bool littlefsAvailable;
+extern bool storageAvailable;
+extern bool usingSD;
+extern fs::FS* storageFS;
 
 #endif //LITTLEFS_MANAGER_H

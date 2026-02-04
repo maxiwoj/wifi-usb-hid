@@ -1,7 +1,7 @@
 #include "web_server.h"
 #include <WiFi.h>
 #include <WebServer.h>
-#include <LittleFS.h>
+#include <FS.h>
 #include "wifi_manager.h"
 #include "display_manager.h"
 #include "hid_handler.h"
@@ -63,8 +63,8 @@ bool httpsEnabled = false;
 #endif
 
 void serveStaticFile(String path, String contentType) {
-  if (littlefsAvailable) {
-    File file = LittleFS.open(path, "r");
+  if (storageAvailable && storageFS) {
+    File file = storageFS->open(path, "r");
     if (file) {
       SERVER_STREAM_FILE(file, contentType);
       file.close();
@@ -346,10 +346,10 @@ void handleListScripts() {
   String json = "[";
   bool first = true;
 
-  // Check if LittleFS is available
-  if (littlefsAvailable) {
-    // Iterate through all files in LittleFS (ESP32 API)
-    File root = LittleFS.open("/");
+  // Check if Storage is available
+  if (storageAvailable && storageFS) {
+    // Iterate through all files
+    File root = storageFS->open("/");
     File file = root.openNextFile();
     while (file) {
       String filename = String(file.name());
@@ -684,14 +684,16 @@ void handleReorderQuickActions() {
   String filename = String("/quickactions_") + os + ".txt";
   filename.replace(" ", "_");
 
-  File file = LittleFS.open(filename, "w");
-  if (!file) {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save reordered actions\"}");
-    return;
-  }
+  if (storageAvailable && storageFS) {
+    File file = storageFS->open(filename, "w");
+    if (!file) {
+      SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save reordered actions\"}");
+      return;
+    }
 
-  file.print(newContent);
-  file.close();
+    file.print(newContent);
+    file.close();
+  }
 
   displayAction("Quick actions reordered");
   SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Actions reordered\"}");
@@ -819,8 +821,8 @@ void handleManageFiles() {
 void handleListFiles() {
   if (!checkAuthentication()) return;
 
-  if (!littlefsAvailable) {
-    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
+  if (!storageAvailable || !storageFS) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"Storage not available\"}");
     return;
   }
 
@@ -840,8 +842,8 @@ void handleListFiles() {
   json += "},";
   json += "\"files\":[";
 
-  // Iterate through all files (ESP32 API)
-  File root = LittleFS.open("/");
+  // Iterate through all files
+  File root = storageFS->open("/");
   File file = root.openNextFile();
   bool first = true;
 
@@ -890,9 +892,11 @@ void handleFileUpload() {
     }
 
     // Open file for writing
-    uploadFile = LittleFS.open(filename, "w");
-    if (!uploadFile) {
-      Serial.println("Upload error: Failed to open file for writing");
+    if (storageAvailable && storageFS) {
+      uploadFile = storageFS->open(filename, "w");
+      if (!uploadFile) {
+        Serial.println("Upload error: Failed to open file for writing");
+      }
     }
   }
   else if (upload.status == UPLOAD_FILE_WRITE) {
@@ -927,8 +931,8 @@ void handleFileUploadDone() {
 void handleFileDelete() {
   if (!checkAuthentication()) return;
 
-  if (!littlefsAvailable) {
-    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
+  if (!storageAvailable || !storageFS) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"Storage not available\"}");
     return;
   }
 
@@ -944,12 +948,12 @@ void handleFileDelete() {
     filename = "/" + filename;
   }
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"File not found\"}");
     return;
   }
 
-  if (LittleFS.remove(filename)) {
+  if (storageFS->remove(filename)) {
     Serial.println("File deleted: " + filename);
     displayAction("File deleted: " + filename);
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File deleted\"}");
@@ -961,8 +965,8 @@ void handleFileDelete() {
 void handleFileDownload() {
   if (!checkAuthentication()) return;
 
-  if (!littlefsAvailable) {
-    SERVER_SEND(503, "text/plain", "LittleFS not available");
+  if (!storageAvailable || !storageFS) {
+    SERVER_SEND(503, "text/plain", "Storage not available");
     return;
   }
 
@@ -978,12 +982,12 @@ void handleFileDownload() {
     filename = "/" + filename;
   }
 
-  if (!LittleFS.exists(filename)) {
+  if (!storageFS->exists(filename)) {
     SERVER_SEND(404, "text/plain", "File not found");
     return;
   }
 
-  File file = LittleFS.open(filename, "r");
+  File file = storageFS->open(filename, "r");
   if (!file) {
     SERVER_SEND(500, "text/plain", "Failed to open file");
     return;

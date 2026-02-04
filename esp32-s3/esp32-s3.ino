@@ -57,8 +57,8 @@ void setup() {
   // Initialize ST7735 LCD display
   setupDisplay();
 
-  // Initialize LittleFS
-  setupLittleFS();
+  // Initialize Storage (SD Card or LittleFS)
+  setupStorage();
 
   // Setup web server
   setupWebServer();
