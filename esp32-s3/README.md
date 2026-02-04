@@ -1,8 +1,14 @@
 # WiFi USB HID Control - ESP32-S3 with ST7735 LCD
 
-This is an all-in-one implementation of the WiFi USB HID Control project for **ESP32-S3 boards** with a built-in **0.96" ST7735 IPS LCD display**. This single board combines all features that previously required two separate boards (Pro Micro + NodeMCU).
+![Logo](../docs/resource/logo.bmp)
+
+This is an all-in-one implementation of the WiFi USB HID Control project for **ESP32-S3 boards** with a built-in 
+**0.96" ST7735 IPS LCD display**. This single board combines all features that previously required two separate boards (Pro Micro + NodeMCU).
 
 ## Hardware Specifications
+
+![Lilygo T-Dongle-S3](../docs/resource/lilygo-t-dongle.jpeg)
+*Lilygo T-Dongle-S3*
 
 - **Board**: ESP32-S3 Dongle / T-Dongle-S3
 - **Chip**: ESP32-S3R8 (with 8MB PSRAM)
@@ -12,32 +18,14 @@ This is an all-in-one implementation of the WiFi USB HID Control project for **E
 - **USB**: Native USB OTG with HID support
 
 ### Compatible Boards
-- LILYGO T-Dongle-S3
+- [LILYGO T-Dongle-S3](https://lilygo.cc/en-us/products/t-dongle-s3) (supports microSD card for script storage)
 - ESP32-S3 Development Board with ST7735 LCD
 - Other ESP32-S3 boards with 0.96" ST7735 display (may require pin adjustments)
 
-## Features
-
-- ✅ Native USB HID support (keyboard and mouse emulation)
-- ✅ WiFi web server with REST API
-- ✅ Color IPS LCD display (ST7735)
-- ✅ DuckyScript parser
-- ✅ Mouse Jiggler with multiple patterns
-- ✅ Quick Actions and Scripts
-- ✅ File Management
-- ✅ Access Point and Station modes
-- ✅ Web-based configuration
-
-## Key Differences from ESP32-C3 Version
-
-| Feature | ESP32-C3 | ESP32-S3 |
-|---------|----------|----------|
-| USB HID | ❌ Not supported | ✅ **Full support** |
-| Display Type | OLED (SSD1306, I2C) | **IPS LCD (ST7735, SPI)** |
-| Display Size | 0.42" (72x40) | **0.96" (80x160)** |
-| Colors | Monochrome | **Full color (65K)** |
-| PSRAM | No | **8MB PSRAM** |
-| All-in-one | No (needs Pro Micro) | **Yes** ✅ |
+### SD Card Support
+The LILYGO T-Dongle-S3 includes a microSD card slot. This project supports loading scripts directly from the SD card. 
+If an SD card is present, the device will prioritize files on the SD card over the internal LittleFS storage. 
+You can simply copy your `.txt` scripts to the root of the SD card.
 
 ## Software Setup
 
@@ -61,7 +49,6 @@ Download and install the latest Arduino IDE from [arduino.cc](https://www.arduin
 Install these libraries via **Sketch > Include Library > Manage Libraries**:
 
 #### Required Libraries:
-- **TFT_eSPI** (by Bodmer) - **MANDATORY for T-Dongle-S3**
 - **Adafruit GFX Library** (by Adafruit)
 - **Adafruit ST7735 and ST7789 Library** (by Adafruit) - *Used by some sub-tests*
 
@@ -114,25 +101,9 @@ Open `config.h` and verify/adjust these pins based on your board's documentation
 
 ## Uploading LittleFS Data (Web Interface Files)
 
-The web interface files (HTML, CSS, JS) must be uploaded to the ESP32-S3's LittleFS filesystem.
+The web interface files (HTML, CSS, JS) must be uploaded to the ESP32-S3's LittleFS filesystem for the web interface to function.
 
-### Install the LittleFS Upload Plugin
-
-1. Download the plugin from [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload/releases)
-2. Copy the `.vsix` file to:
-   - **Mac/Linux**: `~/.arduinoIDE/plugins/`
-   - **Windows**: `C:\Users\<username>\.arduinoIDE\plugins\`
-3. Create the `plugins` directory if it doesn't exist
-4. Restart Arduino IDE
-
-### Upload the Files
-
-1. Ensure the `data` folder exists in the sketch directory with your web files
-2. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-3. Type and select: **"Upload LittleFS to Pico/ESP8266/ESP32"**
-4. Wait for the upload to complete
-
-**Note:** If the device is in HID mode, you'll need to enter bootloader mode first (see below).
+For detailed, step-by-step instructions on how to install the LittleFS upload plugin and upload your data, please refer to the **[LittleFS Setup Guide](../docs/LITTLEFS_SETUP.md)** in the main project directory.
 
 ## Re-uploading Sketches (Bootloader Mode)
 
@@ -177,20 +148,15 @@ This occurs when another process is using the serial port.
 
 ## Configuration
 
-The main settings to adjust in `config.h`:
+All project settings are located in the `config.h` file. You can adjust the following parameters there:
 
-```cpp
-// Display pins - VERIFY FOR YOUR BOARD!
-#define TFT_CS    10
-#define TFT_RST   14
-#define TFT_DC    13
-#define TFT_MOSI  11
-#define TFT_SCLK  12
-#define TFT_BL    9
+- **Display Pins**: Verify and adjust the `TFT_*` pin definitions to match your specific hardware.
+- **Display Rotation**: Change `DISPLAY_ROTATION` if the screen orientation is incorrect.
+- **WiFi Credentials**: Default AP SSID and password.
+- **Web Authentication**: Default login credentials for the web interface.
+- **SD Card Pins**: Configuration for the microSD card slot (pre-configured for T-Dongle-S3).
 
-// Display rotation
-#define DISPLAY_ROTATION 1  // 0=0°, 1=90°, 2=180°, 3=270°
-```
+Always check `config.h` before compiling to ensure the settings match your hardware.
 
 ## Troubleshooting
 
