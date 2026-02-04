@@ -799,177 +799,65 @@ void handleDeleteQuickScript() {
 }
 
 // File Management Handlers
-
 void handleManageFiles() {
   if (!checkAuthentication()) return;
   serveStaticFile("/manage-files.html", "text/html");
 }
 
 void handleListFiles() {
-
   if (!checkAuthentication()) return;
-
-
-
   if (!littlefsAvailable) {
-
     SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
-
     return;
-
   }
-
-
-
   String path = "/";
-
   if (SERVER_HAS_ARG("path")) {
-
     path = SERVER_ARG("path");
-
   }
-
-  
-
   if (!path.startsWith("/")) path = "/" + path;
-
-  if (!path.endsWith("/") && path != "/") path += "/";
-
-
-
   size_t totalBytes = 0;
-
   size_t usedBytes = 0;
-
   getFilesystemInfo(totalBytes, usedBytes);
-
-
-
   String json = "{";
-
   json += "\"path\":\"" + escapeJson(path) + "\",";
-
   json += "\"filesystem\":{";
-
   json += "\"total\":" + String(totalBytes) + ",";
-
   json += "\"used\":" + String(usedBytes) + ",";
-
   json += "\"free\":" + String(totalBytes - usedBytes);
-
   json += "},";
-
   json += "\"files\":[";
 
-
-
-  // We open root because LittleFS.openDir(path) on ESP8266 sometimes 
-
-  // behaves differently regarding relative/absolute paths.
-
-  // By iterating from root and filtering ourselves, we are more consistent.
-
-  Dir dir = LittleFS.openDir("/");
+  Dir dir = LittleFS.openDir(path);
 
   bool first = true;
-
-  String addedDirs = "";
-
-
-
   while (dir.next()) {
-
-    String fullPath = dir.fileName();
-
-    if (!fullPath.startsWith("/")) fullPath = "/" + fullPath;
-
-    
-
-    if (fullPath.startsWith(path) && fullPath != path) {
-
-      String relativePath = fullPath.substring(path.length());
-
-      int slashPos = relativePath.indexOf('/');
-
-      
-
-      if (slashPos == -1) {
-
-        // It's a file in the current directory
-
-        if (!first) json += ",";
-
-        first = false;
-
-        
-
-        json += "{";
-
-        json += "\"name\":\"" + escapeJson(fullPath) + "\",";
-
-        json += "\"size\":" + String(dir.fileSize()) + ",";
-
-        json += "\"is_dir\":false";
-
-        json += "}";
-
-      } else {
-
-        // It's a subdirectory
-
-        String dirName = relativePath.substring(0, slashPos);
-
-        String dirFullPath = path + dirName;
-
-        
-
-        // Only add each directory once
-
-        if (addedDirs.indexOf("|" + dirName + "|") == -1) {
-
-          if (!first) json += ",";
-
-          first = false;
-
-          
-
-          json += "{";
-
-          json += "\"name\":\"" + escapeJson(dirFullPath) + "\",";
-
-          json += "\"size\":0,";
-
-          json += "\"is_dir\":true";
-
-          json += "}";
-
-          
-
-          addedDirs += "|" + dirName + "|";
-
-        }
-
-      }
-
+    if (!first) json += ",";
+    first = false;
+    String fileName = dir.fileName();
+    // Ensure fileName is a full path
+    if (!fileName.startsWith("/")) {
+        String fullPath = path;
+        if (!fullPath.endsWith("/")) fullPath += "/";
+        fullPath += fileName;
+        fileName = fullPath;
     }
 
+    bool isDir = dir.isDirectory();
+    size_t fileSize = isDir ? 0 : dir.fileSize();
+    json += "{";
+    json += "\"name\":\"" + escapeJson(fileName) + "\",";
+    json += "\"size\":" + String(fileSize) + ",";
+    json += "\"is_dir\":" + String(isDir ? "true" : "false");
+    json += "}";
   }
-
-
-
   json += "]}";
-
   SERVER_SEND(200, "application/json", json);
-
 }
-
-
-
 
 
 void handleCreateDir() {
   if (!checkAuthentication()) return;
-  
+
   if (!littlefsAvailable) {
     SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
     return;
@@ -979,14 +867,20 @@ void handleCreateDir() {
     SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing path parameter\"}");
     return;
   }
-  
+
   String path = SERVER_ARG("path");
   if (!path.startsWith("/")) path = "/" + path;
-  
-  // In flat LittleFS, directories are virtual based on filenames.
-  // We just return success so the UI is happy. 
-  // The directory "exists" as soon as a file is uploaded with this path.
-  SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Directory path ready\"}");
+
+  if (LittleFS.exists(path)) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Directory already exists\"}");
+    return;
+  }
+
+  if (LittleFS.mkdir(path)) {
+     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Directory created\"}");
+  } else {
+     SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to create directory\"}");
+  }
 }
 
 // Global variable for file upload
@@ -1010,7 +904,7 @@ void handleFileUpload() {
         path = SERVER_ARG("path");
         if (!path.endsWith("/")) path += "/";
     }
-    
+
     // Combine path and filename
     String fullPath = path + filename;
 
@@ -1046,31 +940,17 @@ void handleFileUpload() {
   }
 }
 
-
-
 void handleFileUploadDone() {
-
   if (!checkAuthentication()) return;
-
-
 
   HTTPUpload& upload = server.upload();
 
-
-
   if (upload.status == UPLOAD_FILE_END) {
-
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File uploaded successfully\"}");
-
   } else {
-
     SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload failed\"}");
-
   }
-
 }
-
-
 
 void handleFileDelete() {
   if (!checkAuthentication()) return;
@@ -1088,33 +968,26 @@ void handleFileDelete() {
   String filename = SERVER_ARG("name");
   if (!filename.startsWith("/")) filename = "/" + filename;
 
-  // Check if it's a "directory" (any file starts with filename + /)
+  File file = LittleFS.open(filename, "r");
   bool isDir = false;
-  String dirPrefix = filename;
-  if (!dirPrefix.endsWith("/")) dirPrefix += "/";
-  
-  Dir dir = LittleFS.openDir("/");
-  while (dir.next()) {
-    String f = dir.fileName();
-    if (!f.startsWith("/")) f = "/" + f;
-    if (f.startsWith(dirPrefix)) {
-      isDir = true;
-      break;
-    }
+  if (file) {
+    isDir = file.isDirectory();
+    file.close();
   }
 
+  bool success = false;
   if (isDir) {
-    // Directory is "not empty" if any file starts with its prefix
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete: directory is not empty\"}");
-    return;
+    success = LittleFS.rmdir(filename);
+  } else {
+    success = LittleFS.remove(filename);
   }
 
-  if (LittleFS.remove(filename)) {
+  if (success) {
     Serial.println("Deleted: " + filename);
     displayAction("Deleted: " + filename);
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Item deleted\"}");
   } else {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete item\"}");
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete item (dir must be empty)\"}");
   }
 }
 
@@ -1134,34 +1007,21 @@ void handleFileDownload() {
   String filename = SERVER_ARG("name");
   if (!filename.startsWith("/")) filename = "/" + filename;
 
-  // Check if it's a directory
-  String dirPrefix = filename;
-  if (!dirPrefix.endsWith("/")) dirPrefix += "/";
-  
-  bool isDir = false;
-  Dir dir = LittleFS.openDir("/");
-  while (dir.next()) {
-    String f = dir.fileName();
-    if (!f.startsWith("/")) f = "/" + f;
-    if (f.startsWith(dirPrefix)) {
-      isDir = true;
-      break;
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    // Check if it's a directory
+    Dir dir = LittleFS.openDir(filename);
+    if (dir.next()) {
+      SERVER_SEND(400, "text/plain", "Cannot download directory");
+      return;
     }
-  }
-
-  if (isDir) {
-    SERVER_SEND(400, "text/plain", "Cannot download directory");
-    return;
-  }
-
-  if (!LittleFS.exists(filename)) {
     SERVER_SEND(404, "text/plain", "File not found");
     return;
   }
 
-  File file = LittleFS.open(filename, "r");
-  if (!file) {
-    SERVER_SEND(500, "text/plain", "Failed to open file");
+  if (file.isDirectory()) {
+    file.close();
+    SERVER_SEND(400, "text/plain", "Cannot download directory");
     return;
   }
 
