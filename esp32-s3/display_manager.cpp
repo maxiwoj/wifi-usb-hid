@@ -30,14 +30,13 @@ void showStartupLogo() {
 
   // Title (large text)
   display.setTextSize(2);
-  display.setCursor(5, 20);
-  display.println("WiFi");
-  display.setCursor(5, 40);
-  display.println("HID");
+  // Center "WiFi USB"
+  display.setCursor(10, 20);
+  display.println("WiFi HID");
 
   // Subtitle (small text)
   display.setTextSize(1);
-  display.setCursor(10, 70);
+  display.setCursor(40, 50);
   display.setTextColor(COLOR_CYAN);
   display.println("Booting...");
 
@@ -85,11 +84,12 @@ void updateDisplayStatus() {
 
   int y = 2;  // Starting Y position
   int lineHeight = 10;
+  int maxChars = 25; // Approx chars for 160px width with 6px font
 
   // Line 1: Title
   display.setCursor(2, y);
   display.setTextColor(COLOR_YELLOW);
-  display.println("WiFi USB HID");
+  display.println("WiFi USB HID Control");
   y += lineHeight + 2;
 
   // Separator line
@@ -108,11 +108,7 @@ void updateDisplayStatus() {
     display.print("IP: ");
     display.setTextColor(COLOR_WHITE);
     String ip = WiFi.localIP().toString();
-    // Truncate IP if too long
-    if (ip.length() > 12) {
-      int lastDot = ip.lastIndexOf('.');
-      ip = "..." + ip.substring(lastDot);
-    }
+    // IP usually fits in 160px
     display.println(ip);
   }
   y += lineHeight;
@@ -123,8 +119,8 @@ void updateDisplayStatus() {
   display.print("Net: ");
   display.setTextColor(COLOR_WHITE);
   String ssid = isAPMode ? String(AP_SSID) : currentSSID;
-  if (ssid.length() > 10) {
-    ssid = ssid.substring(0, 7) + "...";
+  if (ssid.length() > maxChars - 5) {
+    ssid = ssid.substring(0, maxChars - 8) + "...";
   }
   display.println(ssid);
   y += lineHeight;
@@ -135,15 +131,18 @@ void updateDisplayStatus() {
   display.print("U:");
   display.setTextColor(COLOR_WHITE);
   display.print(WEB_AUTH_USER);
+  
+  // Display Pass on same line if short, or next line?
+  // Let's keep separate lines but use full width
   y += lineHeight;
-
+  
   display.setCursor(2, y);
   display.setTextColor(COLOR_CYAN);
   display.print("P:");
   display.setTextColor(COLOR_WHITE);
   String pass = String(WEB_AUTH_PASS);
-  if (pass.length() > 11) {
-    pass = pass.substring(0, 8) + "...";
+  if (pass.length() > maxChars - 3) {
+    pass = pass.substring(0, maxChars - 6) + "...";
   }
   display.println(pass);
   y += lineHeight + 4;
@@ -160,8 +159,8 @@ void updateDisplayStatus() {
       display.print("> ");
       display.setTextColor(COLOR_WHITE);
       String action = lastAction;
-      if (action.length() > 11) {
-        action = action.substring(0, 8) + "...";
+      if (action.length() > maxChars - 2) {
+        action = action.substring(0, maxChars - 5) + "...";
       }
       display.println(action);
     }

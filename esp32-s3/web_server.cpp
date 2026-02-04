@@ -223,6 +223,15 @@ void handleCommand() {
   if (SERVER_HAS_ARG("cmd")) {
     String cmd = SERVER_ARG("cmd");
     processHIDCommand(cmd);
+    
+    // Only log typed text to display history
+    if (cmd.startsWith("TYPE:")) {
+      displayAction("Type: " + cmd.substring(5));
+    } 
+    else if (cmd.startsWith("TYPELN:")) {
+      displayAction("TypeLn: " + cmd.substring(7));
+    }
+
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
     SERVER_SEND(400, "application/json", "{status:error,message:Missing cmd parameter}");
@@ -234,7 +243,15 @@ void handleScript() {
   if (SERVER_HAS_ARG("script")) {
     String script = SERVER_ARG("script");
     executeDuckyScript(script);
-    displayAction("Script executed");
+    
+    // Check if name is provided for logging
+    if (SERVER_HAS_ARG("name")) {
+      String name = SERVER_ARG("name");
+      displayAction("Script: " + name);
+    } else {
+      displayAction("Script executed");
+    }
+    
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Script executed\"}");
   } else {
     SERVER_SEND(400, "application/json", "{status:error,message:Missing script parameter}");
