@@ -1,0 +1,40 @@
+#ifndef LITTLEFS_MANAGER_H
+#define LITTLEFS_MANAGER_H
+
+#include <Arduino.h>
+#include <FS.h>
+
+void setupStorage();
+bool saveScriptToFile(String name, String script);
+String loadScriptFromFile(String name);
+bool deleteScriptFile(String name);
+String getScriptNameFromFilename(String filename);
+String getScriptFilename(String name);
+
+// Quick actions management
+bool saveQuickAction(String os, String cmd, String label, String desc, String btnClass);
+String loadQuickActions(String os);
+bool deleteQuickAction(String os, String cmd);
+bool deleteAllQuickActions(String os);
+
+// Custom OS management
+bool addCustomOS(String osName);
+bool deleteCustomOS(String osName);
+String loadCustomOSList();
+
+// Quick scripts management
+bool saveQuickScript(String os, String id, String label, String script, String btnClass);
+String loadQuickScripts(String os);
+bool deleteQuickScript(String os, String id);
+bool deleteAllQuickScripts(String os);
+
+// File management functions
+String sanitizeFilename(String filename);
+bool hasAvailableSpace(size_t requiredBytes);
+bool getFilesystemInfo(size_t &totalBytes, size_t &usedBytes);
+
+extern bool storageAvailable;
+extern bool usingSD;
+extern fs::FS* storageFS;
+
+#endif //LITTLEFS_MANAGER_H

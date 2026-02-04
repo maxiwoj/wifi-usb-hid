@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Fullscreen Trackpad</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #trackpad {
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      cursor: crosshair;
+      position: relative;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .trackpad-cursor {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: rgba(102, 126, 234, 0.6);
+      border: 2px solid #667eea;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.2s;
+      display: none;
+    }
+
+    #exitBtn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 70px;
+      height: 70px;
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      border: 4px solid white;
+      border-radius: 50%;
+      font-size: 32px;
+      font-weight: bold;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s;
+    }
+
+    #exitBtn:hover {
+      background: rgba(220, 38, 38, 1);
+      transform: scale(1.1);
+    }
+
+    #exitBtn:active {
+      transform: scale(0.95);
+    }
+
+    #sensitivity {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 20px;
+      border-radius: 25px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10000;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    #sensitivitySlider {
+      width: 150px;
+    }
+
+    @media (max-width: 768px) {
+      #exitBtn {
+        top: 15px;
+        right: 15px;
+      }
+    }
+  </style>
+  <link rel="icon" type="image/png" href="/favicon.png">
+</head>
+<body>
+  <div id="trackpad">
+    <div class="trackpad-cursor" id="trackpadCursor"></div>
+  </div>
+
+  <button id="exitBtn" onclick="window.history.back()" aria-label="Go back">←</button>
+
+  <div id="sensitivity">
+    <label>Sensitivity:</label>
+    <input type="range" id="sensitivitySlider" min="0.5" max="10" step="0.1" value="1.5">
+    <span id="sensitivityValue">1.5x</span>
+  </div>
+
+  <script>
+    // Activity logging function (matches main page)
+    function log(message) {
+      console.log('[Trackpad] ' + message);
+    }
+
+    // Send command to server (matches main page)
+    function sendCommand(cmd) {
+      fetch('/api/command', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'cmd=' + encodeURIComponent(cmd)
+      })
+      .then(response => response.text())
+      .then(data => console.log('Command sent:', cmd, '- Response:', data))
+      .catch(error => console.error('Error:', error));
+    }
+
+    // Trackpad functionality (same as main page)
+    (function() {
+      const trackpad = document.getElementById('trackpad');
+      const cursor = document.getElementById('trackpadCursor');
+      const sensitivitySlider = document.getElementById('sensitivitySlider');
+      const sensitivityValue = document.getElementById('sensitivityValue');
+
+      let isDragging = false;
+      let isButtonHeld = false;
+      let hasMoved = false;
+      let lastX = 0;
+      let lastY = 0;
+      let sensitivity = 1.5;
+      let lastClickTime = 0;
+      const DOUBLE_CLICK_THRESHOLD = 400;
+
+      // Sensitivity control
+      sensitivitySlider.addEventListener('input', function() {
+        sensitivity = parseFloat(this.value);
+        updateSensitivityDisplay();
+      });
+
+      function updateSensitivityDisplay() {
+        sensitivityValue.textContent = sensitivity.toFixed(1) + 'x';
+      }
+
+      function handleMove(clientX, clientY) {
+        if (isDragging) {
+          const deltaX = Math.round((clientX - lastX) * sensitivity);
+          const deltaY = Math.round((clientY - lastY) * sensitivity);
+
+          if (deltaX !== 0 || deltaY !== 0) {
+            sendCommand('MOUSE_MOVE:' + deltaX + ',' + deltaY);
+            hasMoved = true;
+          }
+        }
+
+        lastX = clientX;
+        lastY = clientY;
+
+        // Update cursor position
+        const rect = trackpad.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+      }
+
+      function isInsideTrackpad(clientX, clientY) {
+        const rect = trackpad.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right &&
+               clientY >= rect.top && clientY <= rect.bottom;
+      }
+
+      // Mouse events
+      trackpad.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+
+        isDragging = true;
+        hasMoved = false;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        cursor.style.display = 'block';
+        cursor.style.opacity = '1';
+
+        const now = Date.now();
+        if (now - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+          sendCommand('MOUSE_PRESS');
+          isButtonHeld = true;
+          log('Double-click detected - holding button');
+          lastClickTime = 0;
+        } else {
+          lastClickTime = now;
+        }
+
+        e.preventDefault();
+      });
+
+      trackpad.addEventListener('mousemove', function(e) {
+        handleMove(e.clientX, e.clientY);
+        e.preventDefault();
+      });
+
+      trackpad.addEventListener('mouseup', function(e) {
+        if (e.button !== 0) return;
+
+        if (isButtonHeld) {
+          sendCommand('MOUSE_RELEASE');
+          isButtonHeld = false;
+          log('Released held button');
+        } else if (!hasMoved) {
+          sendCommand('MOUSE_LEFT');
+          log('Click');
+        }
+
+        isDragging = false;
+        cursor.style.opacity = '0.5';
+        e.preventDefault();
+      });
+
+      trackpad.addEventListener('mouseleave', function(e) {
+        if (isButtonHeld) {
+          sendCommand('MOUSE_RELEASE');
+          isButtonHeld = false;
+        }
+        isDragging = false;
+        cursor.style.display = 'none';
+        e.preventDefault();
+      });
+
+      // Touch events
+      trackpad.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+          const touch = e.touches[0];
+          isDragging = true;
+          hasMoved = false;
+          lastX = touch.clientX;
+          lastY = touch.clientY;
+          cursor.style.display = 'block';
+          cursor.style.opacity = '1';
+
+          const now = Date.now();
+          if (now - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+            sendCommand('MOUSE_PRESS');
+            isButtonHeld = true;
+            log('Double-tap detected - holding button');
+            lastClickTime = 0;
+          } else {
+            lastClickTime = now;
+          }
+
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 1) {
+          const touch = e.touches[0];
+          handleMove(touch.clientX, touch.clientY);
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchend', function(e) {
+        if (e.changedTouches.length === 1) {
+          if (isButtonHeld) {
+            sendCommand('MOUSE_RELEASE');
+            isButtonHeld = false;
+            log('Released held button');
+          } else if (!hasMoved) {
+            sendCommand('MOUSE_LEFT');
+            log('Tap');
+          }
+
+          isDragging = false;
+          cursor.style.display = 'none';
+          e.preventDefault();
+        }
+      });
+
+      trackpad.addEventListener('touchcancel', function(e) {
+        if (isButtonHeld) {
+          sendCommand('MOUSE_RELEASE');
+          isButtonHeld = false;
+        }
+        isDragging = false;
+        cursor.style.display = 'none';
+        e.preventDefault();
+      });
+
+      // Initialize
+      updateSensitivityDisplay();
+    })();
+  </script>
+</body>
+</html>

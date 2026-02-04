@@ -1,0 +1,9 @@
+GUI_SPACE|⌘+Space|Spotlight|btn-primary
+GUI_TAB|⌘+Tab|Switch Apps|btn-primary
+GUI_D|⌘+D|Show Desktop|btn-primary
+GUI_H|⌘+H|Hide App|btn-primary
+GUI_W|⌘+W|Close Window|btn-primary
+ENTER|Enter|Enter|btn-success
+ESC|Escape|Escape|btn-warning
+BACKSPACE|Backspace|Backspace|btn-warning
+TAB|Tab|Tab|btn-info
