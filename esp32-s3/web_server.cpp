@@ -62,30 +62,54 @@ bool httpsEnabled = false;
 #define SERVER_REQUEST_AUTH() server.requestAuthentication()
 #endif
 
-void serveStaticFile(String path, String contentType) {
-  if (storageAvailable && storageFS) {
-    // Try to find file in /www directory first (if on SD card/storage that supports folders)
-    String wwwPath = "/www" + path;
-    if (storageFS->exists(wwwPath)) {
-      File file = storageFS->open(wwwPath, "r");
-      if (file) {
-        SERVER_STREAM_FILE(file, contentType);
-        file.close();
-        return;
-      }
-    }
+String getContentType(String filename) {
+  if (filename.endsWith(".html")) return "text/html";
+  else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".js")) return "application/javascript";
+  else if (filename.endsWith(".png")) return "image/png";
+  else if (filename.endsWith(".jpg")) return "image/jpeg";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
+  else if (filename.endsWith(".txt")) return "text/plain";
+  else if (filename.endsWith(".pdf")) return "application/pdf";
+  return "text/plain";
+}
 
-    // Fallback to root (legacy support)
-    if (storageFS->exists(path)) {
-      File file = storageFS->open(path, "r");
-      if (file) {
-        SERVER_STREAM_FILE(file, contentType);
-        file.close();
-        return;
-      }
+bool handleStaticFile(String path) {
+  if (!storageAvailable || !storageFS) return false;
+
+  // Default to index.html for root
+  if (path == "/") path = "/index.html";
+
+  String contentType = getContentType(path);
+  
+  // Try /www directory first
+  String wwwPath = "/www" + path;
+  if (storageFS->exists(wwwPath)) {
+    File file = storageFS->open(wwwPath, "r");
+    if (file) {
+      SERVER_STREAM_FILE(file, contentType);
+      file.close();
+      return true;
     }
   }
-  SERVER_SEND(404, "text/plain", "File not found");
+
+  // Fallback to root
+  if (storageFS->exists(path)) {
+    File file = storageFS->open(path, "r");
+    if (file) {
+      SERVER_STREAM_FILE(file, contentType);
+      file.close();
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void serveStaticFile(String path, String contentType) {
+  if (!handleStaticFile(path)) {
+    SERVER_SEND(404, "text/plain", "File not found");
+  }
 }
 
 bool checkAuthentication() {
@@ -96,16 +120,18 @@ bool checkAuthentication() {
   return true;
 }
 
+// Try to serve the file directly
+void handleNotFound() {
+  if (!checkAuthentication()) return;
+  
+  String path = server.uri();
+  if (handleStaticFile(path)) return;
+  
+  SERVER_SEND(404, "text/plain", "File not found: " + path);
+}
+
 void setupWebServer() {
-  // Register routes on HTTP server
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/setup", HTTP_GET, handleSetup);
-  server.on("/manage-actions.html", HTTP_GET, handleManageActions);
-  server.on("/manage-os.html", HTTP_GET, handleManageOS);
-  server.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
-  server.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
-  server.on("/style.css", HTTP_GET, handleCSS);
-  server.on("/script.js", HTTP_GET, handleJS);
+  // Register API routes on HTTP server
   server.on("/api/command", HTTP_POST, handleCommand);
   server.on("/api/script", HTTP_POST, handleScript);
   server.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -127,12 +153,14 @@ void setupWebServer() {
   server.on("/api/customos", HTTP_GET, handleListCustomOS);
   server.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   server.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
-  server.on("/manage-files.html", HTTP_GET, handleManageFiles);
   server.on("/api/files", HTTP_GET, handleListFiles);
   server.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   server.on("/api/files/delete", HTTP_POST, handleFileDelete);
   server.on("/api/files/download", HTTP_GET, handleFileDownload);
   server.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
+
+  // Catch-all for static files
+  server.onNotFound(handleNotFound);
 
   server.begin();
   Serial.println("HTTP server started on port 80");
@@ -141,21 +169,11 @@ void setupWebServer() {
   // Try to initialize HTTPS server
   Serial.println("Initializing HTTPS server...");
 
-  // Set up the certificate and private key using BearSSL
   static BearSSL::X509List serverCert(server_cert, server_cert_len);
   static BearSSL::PrivateKey serverKey(server_key, server_key_len);
-
   secureServer.getServer().setRSACert(&serverCert, &serverKey);
 
-  // Register same routes on HTTPS server
-  secureServer.on("/", HTTP_GET, handleRoot);
-  secureServer.on("/setup", HTTP_GET, handleSetup);
-  secureServer.on("/manage-actions.html", HTTP_GET, handleManageActions);
-  secureServer.on("/manage-os.html", HTTP_GET, handleManageOS);
-  secureServer.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
-  secureServer.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
-  secureServer.on("/style.css", HTTP_GET, handleCSS);
-  secureServer.on("/script.js", HTTP_GET, handleJS);
+  // Register API routes on HTTPS server
   secureServer.on("/api/command", HTTP_POST, handleCommand);
   secureServer.on("/api/script", HTTP_POST, handleScript);
   secureServer.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -177,19 +195,18 @@ void setupWebServer() {
   secureServer.on("/api/customos", HTTP_GET, handleListCustomOS);
   secureServer.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   secureServer.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
-  secureServer.on("/manage-files.html", HTTP_GET, handleManageFiles);
   secureServer.on("/api/files", HTTP_GET, handleListFiles);
   secureServer.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   secureServer.on("/api/files/delete", HTTP_POST, handleFileDelete);
   secureServer.on("/api/files/download", HTTP_GET, handleFileDownload);
   secureServer.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
 
+  // Secure catch-all
+  secureServer.onNotFound(handleNotFound);
+
   secureServer.begin();
   httpsEnabled = true;
   Serial.println("HTTPS server started on port 443");
-  Serial.println("WARNING: HTTPS uses ~15-20KB RAM. Monitor free heap!");
-  Serial.print("Free heap: ");
-  Serial.println(ESP.getFreeHeap());
 #else
   Serial.println("HTTPS is disabled (set ENABLE_HTTPS=1 in config.h to enable)");
 #endif
@@ -202,36 +219,6 @@ void handleWebClients() {
     secureServer.handleClient();
   }
 #endif
-}
-
-void handleRoot() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/index.html", "text/html");
-}
-
-void handleSetup() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/setup.html", "text/html");
-}
-
-void handleManageActions() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/manage-actions.html", "text/html");
-}
-
-void handleManageOS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/manage-os.html", "text/html");
-}
-
-void handleCSS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/style.css", "text/css");
-}
-
-void handleJS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/script.js", "application/javascript");
 }
 
 void handleCommand() {
