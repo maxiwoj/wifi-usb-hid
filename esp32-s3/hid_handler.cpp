@@ -117,62 +117,67 @@ bool isJigglerEnabled() {
   return jigglerEnabled;
 }
 
-void processKeyCommand(String key, bool ctrl, bool alt, bool shift, bool gui) {
-  if (key.length() == 0) return;
-
-  Serial.print("Key Capture: " + key);
-  if (ctrl) Serial.print(" +CTRL");
-  if (alt) Serial.print(" +ALT");
-  if (shift) Serial.print(" +SHIFT");
-  if (gui) Serial.print(" +GUI");
-  Serial.println();
-
-  // Apply modifiers
-  if (ctrl) Keyboard.press(KEY_LEFT_CTRL);
-  if (alt) Keyboard.press(KEY_LEFT_ALT);
-  if (shift) Keyboard.press(KEY_LEFT_SHIFT);
-  if (gui) Keyboard.press(KEY_LEFT_GUI);
-
-  // Handle special keys or single characters
-  if (key.length() == 1) {
-    Keyboard.write(key[0]);
-  } 
-  else if (key == "Enter") Keyboard.write(KEY_RETURN);
-  else if (key == "Escape") Keyboard.write(KEY_ESC);
-  else if (key == "Tab") Keyboard.write(KEY_TAB);
-  else if (key == "Backspace") Keyboard.write(KEY_BACKSPACE);
-  else if (key == "Delete") Keyboard.write(KEY_DELETE);
-  else if (key == "ArrowUp") Keyboard.write(KEY_UP_ARROW);
-  else if (key == "ArrowDown") Keyboard.write(KEY_DOWN_ARROW);
-  else if (key == "ArrowLeft") Keyboard.write(KEY_LEFT_ARROW);
-  else if (key == "ArrowRight") Keyboard.write(KEY_RIGHT_ARROW);
-  else if (key == "F1") Keyboard.write(KEY_F1);
-  else if (key == "F2") Keyboard.write(KEY_F2);
-  else if (key == "F3") Keyboard.write(KEY_F3);
-  else if (key == "F4") Keyboard.write(KEY_F4);
-  else if (key == "F5") Keyboard.write(KEY_F5);
-  else if (key == "F6") Keyboard.write(KEY_F6);
-  else if (key == "F7") Keyboard.write(KEY_F7);
-  else if (key == "F8") Keyboard.write(KEY_F8);
-  else if (key == "F9") Keyboard.write(KEY_F9);
-  else if (key == "F10") Keyboard.write(KEY_F10);
-  else if (key == "F11") Keyboard.write(KEY_F11);
-  else if (key == "F12") Keyboard.write(KEY_F12);
-  else if (key == "PageUp") Keyboard.write(KEY_PAGE_UP);
-  else if (key == "PageDown") Keyboard.write(KEY_PAGE_DOWN);
-  else if (key == "Home") Keyboard.write(KEY_HOME);
-  else if (key == "End") Keyboard.write(KEY_END);
-  else if (key == "Insert") Keyboard.write(KEY_INSERT);
-
-  // Release all modifiers
-  Keyboard.releaseAll();
+// Helper to convert string key name to HID keycode
+uint8_t getHIDKeyCode(String key) {
+  if (key.length() == 1) return key[0];
+  key.toUpperCase();
+  
+  if (key == "CTRL") return KEY_LEFT_CTRL;
+  if (key == "SHIFT") return KEY_LEFT_SHIFT;
+  if (key == "ALT") return KEY_LEFT_ALT;
+  if (key == "GUI") return KEY_LEFT_GUI;
+  if (key == "ENTER") return KEY_RETURN;
+  if (key == "ESC") return KEY_ESC;
+  if (key == "BACKSPACE") return KEY_BACKSPACE;
+  if (key == "TAB") return KEY_TAB;
+  if (key == "SPACE") return ' ';
+  if (key == "DELETE") return KEY_DELETE;
+  if (key == "INSERT") return KEY_INSERT;
+  if (key == "HOME") return KEY_HOME;
+  if (key == "END") return KEY_END;
+  if (key == "PAGEUP") return KEY_PAGE_UP;
+  if (key == "PAGEDOWN") return KEY_PAGE_DOWN;
+  if (key == "UP") return KEY_UP_ARROW;
+  if (key == "DOWN") return KEY_DOWN_ARROW;
+  if (key == "LEFT") return KEY_LEFT_ARROW;
+  if (key == "RIGHT") return KEY_RIGHT_ARROW;
+  if (key == "CAPSLOCK") return KEY_CAPS_LOCK;
+  
+  if (key.startsWith("F")) {
+    int f = key.substring(1).toInt();
+    if (f >= 1 && f <= 12) return KEY_F1 + (f - 1);
+  }
+  
+  return 0;
 }
 
 void processHIDCommand(String cmd) {
   cmd.trim();
 
+  // Key Capture commands
+  if (cmd.startsWith("KEY_PRESS:")) {
+    String keyStr = cmd.substring(10);
+    uint8_t key = getHIDKeyCode(keyStr);
+    if (key) {
+      Keyboard.press(key);
+      Serial.println("Press: " + keyStr);
+    }
+  }
+  else if (cmd.startsWith("KEY_RELEASE:")) {
+    String keyStr = cmd.substring(12);
+    uint8_t key = getHIDKeyCode(keyStr);
+    if (key) {
+      Keyboard.release(key);
+      Serial.println("Release: " + keyStr);
+    }
+  }
+  else if (cmd == "KEY_RELEASE_ALL") {
+    Keyboard.releaseAll();
+    Serial.println("Release All");
+  }
+
   // Mouse Jiggler control
-  if (cmd.startsWith("JIGGLE_ON")) {
+  else if (cmd.startsWith("JIGGLE_ON")) {
     // Parse parameters: JIGGLE_ON <type> <diameter> <delay>
     // Example: JIGGLE_ON circles 5 3000
     int firstSpace = cmd.indexOf(' ');

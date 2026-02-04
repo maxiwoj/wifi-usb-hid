@@ -13,7 +13,6 @@ void handleManageOS();
 void handleCSS();
 void handleJS();
 void handleCommand();
-void handleKey();
 void handleScript();
 void handleJiggler();
 void handleStatus();

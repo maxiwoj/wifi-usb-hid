@@ -9,9 +9,6 @@ void setupHID();
 // Command processor (similar to pro-micro's processCommand)
 void processHIDCommand(String cmd);
 
-// Process raw key capture from web interface
-void processKeyCommand(String key, bool ctrl, bool alt, bool shift, bool gui);
-
 // Mouse jiggler functions
 void updateJiggler();
 void enableJiggler(String type, int diameter, unsigned long interval);
