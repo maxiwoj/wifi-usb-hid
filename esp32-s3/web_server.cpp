@@ -64,11 +64,25 @@ bool httpsEnabled = false;
 
 void serveStaticFile(String path, String contentType) {
   if (storageAvailable && storageFS) {
-    File file = storageFS->open(path, "r");
-    if (file) {
-      SERVER_STREAM_FILE(file, contentType);
-      file.close();
-      return;
+    // Try to find file in /www directory first (if on SD card/storage that supports folders)
+    String wwwPath = "/www" + path;
+    if (storageFS->exists(wwwPath)) {
+      File file = storageFS->open(wwwPath, "r");
+      if (file) {
+        SERVER_STREAM_FILE(file, contentType);
+        file.close();
+        return;
+      }
+    }
+
+    // Fallback to root (legacy support)
+    if (storageFS->exists(path)) {
+      File file = storageFS->open(path, "r");
+      if (file) {
+        SERVER_STREAM_FILE(file, contentType);
+        file.close();
+        return;
+      }
     }
   }
   SERVER_SEND(404, "text/plain", "File not found");
@@ -118,6 +132,7 @@ void setupWebServer() {
   server.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   server.on("/api/files/delete", HTTP_POST, handleFileDelete);
   server.on("/api/files/download", HTTP_GET, handleFileDownload);
+  server.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
 
   server.begin();
   Serial.println("HTTP server started on port 80");
@@ -167,6 +182,7 @@ void setupWebServer() {
   secureServer.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   secureServer.on("/api/files/delete", HTTP_POST, handleFileDelete);
   secureServer.on("/api/files/download", HTTP_GET, handleFileDownload);
+  secureServer.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
 
   secureServer.begin();
   httpsEnabled = true;
@@ -826,15 +842,23 @@ void handleListFiles() {
     return;
   }
 
-  size_t totalBytes = 0;
-  size_t usedBytes = 0;
-
-  if (!getFilesystemInfo(totalBytes, usedBytes)) {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to get filesystem info\"}");
-    return;
+  String path = "/";
+  if (SERVER_HAS_ARG("path")) {
+    path = SERVER_ARG("path");
+  }
+  
+  if (!path.startsWith("/")) path = "/" + path;
+  if (!storageFS->exists(path)) {
+     SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"Path not found\"}");
+     return;
   }
 
+  size_t totalBytes = 0;
+  size_t usedBytes = 0;
+  getFilesystemInfo(totalBytes, usedBytes);
+
   String json = "{";
+  json += "\"path\":\"" + escapeJson(path) + "\",";
   json += "\"filesystem\":{";
   json += "\"total\":" + String(totalBytes) + ",";
   json += "\"used\":" + String(usedBytes) + ",";
@@ -842,8 +866,13 @@ void handleListFiles() {
   json += "},";
   json += "\"files\":[";
 
-  // Iterate through all files
-  File root = storageFS->open("/");
+  // Iterate through files in directory
+  File root = storageFS->open(path);
+  if (!root || !root.isDirectory()) {
+      SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to open directory\"}");
+      return;
+  }
+
   File file = root.openNextFile();
   bool first = true;
 
@@ -852,11 +881,21 @@ void handleListFiles() {
     first = false;
 
     String filename = String(file.name());
-    size_t filesize = file.size();
+    // Ensure filename is a full path. Some FS return just the name.
+    if (!filename.startsWith("/")) {
+        String fullPath = path;
+        if (!fullPath.endsWith("/")) fullPath += "/";
+        fullPath += filename;
+        filename = fullPath;
+    }
+
+    bool isDir = file.isDirectory();
+    size_t filesize = isDir ? 0 : file.size();
 
     json += "{";
     json += "\"name\":\"" + escapeJson(filename) + "\",";
-    json += "\"size\":" + String(filesize);
+    json += "\"size\":" + String(filesize) + ",";
+    json += "\"is_dir\":" + String(isDir ? "true" : "false");
     json += "}";
 
     file = root.openNextFile();
@@ -864,6 +903,34 @@ void handleListFiles() {
 
   json += "]}";
   SERVER_SEND(200, "application/json", json);
+}
+
+void handleCreateDir() {
+  if (!checkAuthentication()) return;
+  
+  if (!storageAvailable || !storageFS) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"Storage not available\"}");
+    return;
+  }
+
+  if (!SERVER_HAS_ARG("path")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing path parameter\"}");
+    return;
+  }
+  
+  String path = SERVER_ARG("path");
+  if (!path.startsWith("/")) path = "/" + path;
+  
+  if (storageFS->exists(path)) {
+     SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Directory already exists\"}");
+     return;
+  }
+  
+  if (storageFS->mkdir(path)) {
+     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Directory created\"}");
+  } else {
+     SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to create directory\"}");
+  }
 }
 
 // Global variable for file upload
@@ -881,9 +948,20 @@ void handleFileUpload() {
       return;
     }
 
-    // Sanitize filename
-    filename = sanitizeFilename(filename);
-    Serial.println("Upload start: " + filename);
+    // Check if path parameter exists to upload to specific directory
+    String path = "/";
+    if (SERVER_HAS_ARG("path")) {
+        path = SERVER_ARG("path");
+        if (!path.endsWith("/")) path += "/";
+    }
+    
+    // Combine path and filename
+    String fullPath = path + filename;
+
+    // Sanitize filename and ensure it starts with /
+    fullPath = sanitizeFilename(fullPath);
+    
+    Serial.println("Upload start: " + fullPath);
 
     // Check available space (rough estimate)
     if (!hasAvailableSpace(100000)) { // Reserve 100KB minimum
@@ -893,7 +971,7 @@ void handleFileUpload() {
 
     // Open file for writing
     if (storageAvailable && storageFS) {
-      uploadFile = storageFS->open(filename, "w");
+      uploadFile = storageFS->open(fullPath, "w");
       if (!uploadFile) {
         Serial.println("Upload error: Failed to open file for writing");
       }
@@ -953,12 +1031,23 @@ void handleFileDelete() {
     return;
   }
 
-  if (storageFS->remove(filename)) {
-    Serial.println("File deleted: " + filename);
-    displayAction("File deleted: " + filename);
-    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File deleted\"}");
+  File file = storageFS->open(filename);
+  bool isDir = file && file.isDirectory();
+  file.close();
+
+  bool success = false;
+  if (isDir) {
+      success = storageFS->rmdir(filename);
   } else {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete file\"}");
+      success = storageFS->remove(filename);
+  }
+
+  if (success) {
+    Serial.println("Deleted: " + filename);
+    displayAction("Deleted: " + filename);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Item deleted\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete item (dir must be empty)\"}");
   }
 }
 
@@ -991,6 +1080,12 @@ void handleFileDownload() {
   if (!file) {
     SERVER_SEND(500, "text/plain", "Failed to open file");
     return;
+  }
+  
+  if (file.isDirectory()) {
+     file.close();
+     SERVER_SEND(400, "text/plain", "Cannot download directory");
+     return;
   }
 
   // Get clean filename (without path) for Content-Disposition

@@ -57,14 +57,6 @@
  #define TFT_SCLK  5    // SPI Clock
  #define TFT_BL    38   // Backlight pin
 
-// ===== SD Card Pins (SD_MMC) =====
-#define SD_MMC_D0   14
-#define SD_MMC_D1   17
-#define SD_MMC_D2   21
-#define SD_MMC_D3   18
-#define SD_MMC_CLK  12
-#define SD_MMC_CMD  16
-
 // ===== Alternative pinout (other ESP32-S3 dongles) =====
 // Uncomment these and comment out the above if using a different board
 // #define TFT_CS    10   // Chip select
@@ -73,6 +65,14 @@
 // #define TFT_MOSI  11   // SPI MOSI
 // #define TFT_SCLK  12   // SPI Clock
 // #define TFT_BL    9    // Backlight pin
+
+// ===== SD Card Pins (SD_MMC) =====
+#define SD_MMC_D0   14
+#define SD_MMC_D1   17
+#define SD_MMC_D2   21
+#define SD_MMC_D3   18
+#define SD_MMC_CLK  12
+#define SD_MMC_CMD  16
 
 // USB HID settings for ESP32-S3
 #define USB_HID_ENABLED 1  // ESP32-S3 has full USB HID support

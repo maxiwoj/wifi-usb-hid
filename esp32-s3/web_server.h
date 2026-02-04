@@ -41,5 +41,6 @@ void handleFileUpload();
 void handleFileUploadDone();
 void handleFileDelete();
 void handleFileDownload();
+void handleCreateDir();
 
 #endif //WEB_SERVER_H
