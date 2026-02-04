@@ -45,10 +45,15 @@ bool connectToWiFi(String ssid, String password) {
 
 void startAPMode() {
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP_SSID, AP_PASS);
-  Serial.println("AP Mode started");
-  Serial.println("SSID: " + String(AP_SSID));
-  Serial.println("Password: " + String(AP_PASS));
-  Serial.println("IP: 192.168.4.1");
-  isAPMode = true;
+  if (WiFi.softAP(AP_SSID, AP_PASS)) {
+    Serial.println("AP Mode started");
+    Serial.println("SSID: " + String(AP_SSID));
+    Serial.println("Password: " + String(AP_PASS));
+    Serial.print("AP IP Address: ");
+    Serial.println(WiFi.softAPIP());
+    isAPMode = true;
+  } else {
+    Serial.println("Failed to start AP Mode!");
+    isAPMode = false;
+  }
 }

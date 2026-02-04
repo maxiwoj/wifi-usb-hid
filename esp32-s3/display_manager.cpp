@@ -1,12 +1,10 @@
 #include "display_manager.h"
 #include <WiFi.h>
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7735.h>
+#include <TFT_eSPI.h>
 #include "config.h"
 
-// ST7735 LCD Display (0.96" - 80x160 pixels)
-Adafruit_ST7735 display = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+// TFT_eSPI display instance
+TFT_eSPI display = TFT_eSPI();
 
 bool displayAvailable = false;
 String lastAction = "";
@@ -15,11 +13,20 @@ unsigned long lastActionTime = 0;
 extern bool isAPMode;
 extern String currentSSID;
 
+// Color definitions for TFT_eSPI
+#define COLOR_BLACK   TFT_BLACK
+#define COLOR_WHITE   TFT_WHITE
+#define COLOR_RED     TFT_RED
+#define COLOR_GREEN   TFT_GREEN
+#define COLOR_BLUE    TFT_BLUE
+#define COLOR_CYAN    TFT_CYAN
+#define COLOR_YELLOW  TFT_YELLOW
+#define COLOR_ORANGE  TFT_ORANGE
+
 // Internal function to show startup logo
 void showStartupLogo() {
-  display.fillScreen(ST77XX_BLACK);
-  display.setTextColor(ST77XX_WHITE);
-  display.setTextWrap(false);
+  display.fillScreen(COLOR_BLACK);
+  display.setTextColor(COLOR_WHITE);
 
   // Title (large text)
   display.setTextSize(2);
@@ -31,83 +38,75 @@ void showStartupLogo() {
   // Subtitle (small text)
   display.setTextSize(1);
   display.setCursor(10, 70);
-  display.setTextColor(ST77XX_CYAN);
+  display.setTextColor(COLOR_CYAN);
   display.println("Booting...");
 
   delay(1500);
 }
 
 void setupDisplay() {
-  Serial.println("Initializing ST7735 LCD display...");
-
-  // Initialize backlight pin if defined
-  #if TFT_BL >= 0
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);  // Turn on backlight
-    Serial.println("Backlight enabled");
-  #endif
+  Serial.println("Initializing TFT display with TFT_eSPI...");
 
   // Initialize display
-  // Use initR(INITR_MINI160x80) for 0.96" 160x80 displays
-  // Or initR(INITR_BLACKTAB) for standard 128x160 displays
-  display.initR(INITR_MINI160x80);  // Initialize for 0.96" 80x160 display
+  display.init();
 
-  // Set rotation (adjust based on your mounting)
+  // Set rotation for T-Dongle-S3 (typically 1 or 3 for landscape)
   display.setRotation(DISPLAY_ROTATION);
 
   displayAvailable = true;
-  Serial.println("ST7735 LCD display initialized successfully!");
+  Serial.println("TFT display initialized!");
+  Serial.print("Display size: ");
+  Serial.print(display.width());
+  Serial.print("x");
+  Serial.println(display.height());
+
+  // Test pattern - shows colored rectangles to verify display is working
+  Serial.println("Showing test pattern...");
+  display.fillScreen(COLOR_RED);
+  delay(500);
+  display.fillScreen(COLOR_GREEN);
+  delay(500);
+  display.fillScreen(COLOR_BLUE);
+  delay(500);
+  display.fillScreen(COLOR_WHITE);
+  delay(500);
+  Serial.println("Test pattern complete");
 
   // Show formatted startup logo
   showStartupLogo();
-
-  // Test pattern (optional - comment out after testing)
-  /*
-  display.fillScreen(ST77XX_BLACK);
-  display.drawRect(0, 0, display.width(), display.height(), ST77XX_WHITE);
-  display.setCursor(5, 5);
-  display.setTextSize(1);
-  display.setTextColor(ST77XX_GREEN);
-  display.print("Size: ");
-  display.print(display.width());
-  display.print("x");
-  display.println(display.height());
-  delay(2000);
-  */
 }
 
-// ST7735 Display Functions - Optimized for 80x160 (or 160x80 in landscape)
+// Display Functions - Optimized for 80x160 (or 160x80 in landscape)
 void updateDisplayStatus() {
   if (!displayAvailable) return;
 
-  display.fillScreen(ST77XX_BLACK);
+  display.fillScreen(COLOR_BLACK);
   display.setTextSize(1);
-  display.setTextWrap(false);
 
   int y = 2;  // Starting Y position
   int lineHeight = 10;
 
   // Line 1: Title
   display.setCursor(2, y);
-  display.setTextColor(ST77XX_YELLOW);
+  display.setTextColor(COLOR_YELLOW);
   display.println("WiFi USB HID");
   y += lineHeight + 2;
 
   // Separator line
-  display.drawFastHLine(0, y, display.width(), ST77XX_BLUE);
+  display.drawFastHLine(0, y, display.width(), COLOR_BLUE);
   y += 4;
 
   // Line 2: Mode and IP
   display.setCursor(2, y);
   if (isAPMode) {
-    display.setTextColor(ST77XX_GREEN);
+    display.setTextColor(COLOR_GREEN);
     display.print("AP: ");
-    display.setTextColor(ST77XX_WHITE);
+    display.setTextColor(COLOR_WHITE);
     display.println("192.168.4.1");
   } else {
-    display.setTextColor(ST77XX_GREEN);
+    display.setTextColor(COLOR_GREEN);
     display.print("IP: ");
-    display.setTextColor(ST77XX_WHITE);
+    display.setTextColor(COLOR_WHITE);
     String ip = WiFi.localIP().toString();
     // Truncate IP if too long
     if (ip.length() > 12) {
@@ -120,9 +119,9 @@ void updateDisplayStatus() {
 
   // Line 3: SSID
   display.setCursor(2, y);
-  display.setTextColor(ST77XX_GREEN);
+  display.setTextColor(COLOR_GREEN);
   display.print("Net: ");
-  display.setTextColor(ST77XX_WHITE);
+  display.setTextColor(COLOR_WHITE);
   String ssid = isAPMode ? String(AP_SSID) : currentSSID;
   if (ssid.length() > 10) {
     ssid = ssid.substring(0, 7) + "...";
@@ -132,16 +131,16 @@ void updateDisplayStatus() {
 
   // Line 4: Web Auth
   display.setCursor(2, y);
-  display.setTextColor(ST77XX_CYAN);
+  display.setTextColor(COLOR_CYAN);
   display.print("U:");
-  display.setTextColor(ST77XX_WHITE);
+  display.setTextColor(COLOR_WHITE);
   display.print(WEB_AUTH_USER);
   y += lineHeight;
 
   display.setCursor(2, y);
-  display.setTextColor(ST77XX_CYAN);
+  display.setTextColor(COLOR_CYAN);
   display.print("P:");
-  display.setTextColor(ST77XX_WHITE);
+  display.setTextColor(COLOR_WHITE);
   String pass = String(WEB_AUTH_PASS);
   if (pass.length() > 11) {
     pass = pass.substring(0, 8) + "...";
@@ -153,13 +152,13 @@ void updateDisplayStatus() {
   if (lastAction.length() > 0) {
     unsigned long timeSinceAction = millis() - lastActionTime;
     if (timeSinceAction < 3000) { // Show for 3 seconds
-      display.drawFastHLine(0, y, display.width(), ST77XX_ORANGE);
+      display.drawFastHLine(0, y, display.width(), COLOR_ORANGE);
       y += 4;
 
       display.setCursor(2, y);
-      display.setTextColor(ST77XX_ORANGE);
+      display.setTextColor(COLOR_ORANGE);
       display.print("> ");
-      display.setTextColor(ST77XX_WHITE);
+      display.setTextColor(COLOR_WHITE);
       String action = lastAction;
       if (action.length() > 11) {
         action = action.substring(0, 8) + "...";

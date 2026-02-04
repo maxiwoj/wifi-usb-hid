@@ -9,7 +9,7 @@
 // LittleFS settings for script storage
 #define MAX_SCRIPT_NAME_LEN 32
 
-// WiFi AP settings
+// WiFi AP settings 
 #define AP_SSID "USB-HID-Setup"
 #define AP_PASS "HID_M4ster"
 
@@ -43,17 +43,28 @@
 #define ST77XX_YELLOW     0xFFE0
 #define ST77XX_ORANGE     0xFD20
 
-// SPI pins for ST7735 (ESP32-S3 Dongle typical configuration)
+// SPI pins for ST7735 display
 // NOTE: These may vary - check your board's documentation!
-#define TFT_CS    10   // Chip select
-#define TFT_RST   14   // Reset pin (or -1 if using hardware reset)
-#define TFT_DC    13   // Data/Command pin (also called RS)
-#define TFT_MOSI  11   // SPI MOSI
-#define TFT_SCLK  12   // SPI Clock
-// MISO not needed for display
+// IMPORTANT: These defines are for reference or non-TFT_eSPI libraries. 
+// TFT_eSPI uses its own 'User_Setup.h' file in the library folder. 
+// You MUST ensure the library's User_Setup.h matches these pins!
 
-// Backlight pin (if controllable, otherwise set to -1)
-#define TFT_BL    9    // Backlight pin (-1 if always on)
+// ===== LILYGO T-Dongle-S3 pinout =====
+ #define TFT_CS    4    // Chip select
+ #define TFT_RST   1    // Reset pin
+ #define TFT_DC    2    // Data/Command pin (also called RS)
+ #define TFT_MOSI  3    // SPI MOSI
+ #define TFT_SCLK  5    // SPI Clock
+ #define TFT_BL    38   // Backlight pin
+
+// ===== Alternative pinout (other ESP32-S3 dongles) =====
+// Uncomment these and comment out the above if using a different board
+// #define TFT_CS    10   // Chip select
+// #define TFT_RST   14   // Reset pin
+// #define TFT_DC    13   // Data/Command pin
+// #define TFT_MOSI  11   // SPI MOSI
+// #define TFT_SCLK  12   // SPI Clock
+// #define TFT_BL    9    // Backlight pin
 
 // USB HID settings for ESP32-S3
 #define USB_HID_ENABLED 1  // ESP32-S3 has full USB HID support

@@ -93,6 +93,7 @@ void setupWebServer() {
   server.on("/style.css", HTTP_GET, handleCSS);
   server.on("/script.js", HTTP_GET, handleJS);
   server.on("/api/command", HTTP_POST, handleCommand);
+  server.on("/api/key", HTTP_POST, handleKey);
   server.on("/api/script", HTTP_POST, handleScript);
   server.on("/api/jiggler", HTTP_GET, handleJiggler);
   server.on("/api/status", HTTP_GET, handleStatus);
@@ -226,6 +227,22 @@ void handleCommand() {
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
     SERVER_SEND(400, "application/json", "{status:error,message:Missing cmd parameter}");
+  }
+}
+
+void handleKey() {
+  if (!checkAuthentication()) return;
+  if (SERVER_HAS_ARG("key")) {
+    String key = SERVER_ARG("key");
+    bool ctrl = SERVER_ARG("ctrl") == "true";
+    bool alt = SERVER_ARG("alt") == "true";
+    bool shift = SERVER_ARG("shift") == "true";
+    bool gui = SERVER_ARG("gui") == "true";
+
+    processKeyCommand(key, ctrl, alt, shift, gui);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\"}");
+  } else {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing key parameter\"}");
   }
 }
 

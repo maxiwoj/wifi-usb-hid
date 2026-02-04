@@ -4,12 +4,17 @@ This is an all-in-one implementation of the WiFi USB HID Control project for **E
 
 ## Hardware Specifications
 
-- **Board**: ESP32-S3 Dongle (Płytka rozwojowa ESP32 S3)
+- **Board**: ESP32-S3 Dongle / T-Dongle-S3
 - **Chip**: ESP32-S3R8 (with 8MB PSRAM)
 - **Display**: 0.96" IPS LCD with ST7735 controller
 - **Resolution**: 80x160 pixels (portrait) or 160x80 (landscape)
 - **Interface**: SPI (for display)
 - **USB**: Native USB OTG with HID support
+
+### Compatible Boards
+- LILYGO T-Dongle-S3
+- ESP32-S3 Development Board with ST7735 LCD
+- Other ESP32-S3 boards with 0.96" ST7735 display (may require pin adjustments)
 
 ## Features
 
@@ -56,8 +61,19 @@ Download and install the latest Arduino IDE from [arduino.cc](https://www.arduin
 Install these libraries via **Sketch > Include Library > Manage Libraries**:
 
 #### Required Libraries:
+- **TFT_eSPI** (by Bodmer) - **MANDATORY for T-Dongle-S3**
 - **Adafruit GFX Library** (by Adafruit)
-- **Adafruit ST7735 and ST7789 Library** (by Adafruit)
+- **Adafruit ST7735 and ST7789 Library** (by Adafruit) - *Used by some sub-tests*
+
+#### LilyGO T-Dongle-S3 Specific Libraries:
+For the best compatibility with the T-Dongle-S3, it is recommended to use the libraries provided by LilyGO:
+1. Download the libraries from the [LilyGO T-Dongle-S3 Repository](https://github.com/Xinyuan-LilyGO/T-Dongle-S3) (check the `lib` folder).
+2. Copy these libraries to your Arduino sketchbook `libraries` folder (e.g., `Documents/Arduino/libraries/`).
+
+#### TFT_eSPI Configuration for T-Dongle-S3:
+If you use the standard `TFT_eSPI` library, you **must** configure the `User_Setup.h` file in the library folder:
+1. Locate `TFT_eSPI/User_Setup.h` in your Arduino libraries folder.
+2. Replace its content with the configuration provided in this project's `User_Setup.h`.
 
 #### Built-in Libraries (included with ESP32 core):
 - WiFi
@@ -94,7 +110,70 @@ Open `config.h` and verify/adjust these pins based on your board's documentation
 ### Step 6: Upload Sketch and LittleFS
 
 1. Upload the sketch: **Sketch > Upload**
-2. Upload web files: **Tools > ESP32 Sketch Data Upload** (requires ESP32FS plugin)
+2. Upload web files to LittleFS (see detailed instructions below)
+
+## Uploading LittleFS Data (Web Interface Files)
+
+The web interface files (HTML, CSS, JS) must be uploaded to the ESP32-S3's LittleFS filesystem.
+
+### Install the LittleFS Upload Plugin
+
+1. Download the plugin from [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload/releases)
+2. Copy the `.vsix` file to:
+   - **Mac/Linux**: `~/.arduinoIDE/plugins/`
+   - **Windows**: `C:\Users\<username>\.arduinoIDE\plugins\`
+3. Create the `plugins` directory if it doesn't exist
+4. Restart Arduino IDE
+
+### Upload the Files
+
+1. Ensure the `data` folder exists in the sketch directory with your web files
+2. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
+3. Type and select: **"Upload LittleFS to Pico/ESP8266/ESP32"**
+4. Wait for the upload to complete
+
+**Note:** If the device is in HID mode, you'll need to enter bootloader mode first (see below).
+
+## Re-uploading Sketches (Bootloader Mode)
+
+**Important:** Once the sketch is running, the ESP32-S3 presents itself as a USB HID device (keyboard/mouse) instead of a serial port. To upload new code, you must enter bootloader mode.
+
+### Method 1: Using BOOT + RESET Buttons
+1. Hold the **BOOT** button
+2. Press and release the **RESET** button (while still holding BOOT)
+3. Release the **BOOT** button
+4. The device should now appear as a serial port in Arduino IDE
+
+### Method 2: Using BOOT Button Only (No RESET Button)
+1. Unplug the device from USB
+2. Hold the **BOOT** button
+3. Plug the device back in (while holding BOOT)
+4. Release the **BOOT** button after 1-2 seconds
+5. The device should now appear as a serial port
+
+### After Uploading
+Press the **RESET** button (or unplug/replug) to exit bootloader mode and run your sketch.
+
+## Troubleshooting Upload Issues
+
+### "Resource busy" or "Could not open port" Error
+
+This occurs when another process is using the serial port.
+
+**Solutions:**
+1. **Close the Serial Monitor** in Arduino IDE
+2. **Close other serial applications** (terminal apps, other IDEs, etc.)
+3. **Find and kill the blocking process:**
+   ```bash
+   lsof /dev/cu.usbmodem*
+   kill -9 <PID>
+   ```
+4. **If still busy, restart:**
+   - Unplug the device
+   - Close Arduino IDE completely
+   - Reopen Arduino IDE
+   - Enter bootloader mode and plug in
+   - Upload immediately
 
 ## Configuration
 
@@ -114,6 +193,10 @@ The main settings to adjust in `config.h`:
 ```
 
 ## Troubleshooting
+
+### Device Not Appearing in Arduino IDE
+- The device is likely in HID mode. Enter bootloader mode (see "Re-uploading Sketches" above)
+- On T-Dongle-S3, the BOOT button is typically on the side or bottom of the board
 
 ### Display Issues
 - **Blank/garbled**: Check pins in `config.h`, try different `initR()` method in `display_manager.cpp`

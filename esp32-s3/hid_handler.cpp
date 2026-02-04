@@ -1,96 +1,30 @@
 /*
- * HID Handler for ESP32-C3
- * Handles USB HID keyboard and mouse operations using ESP32-C3's native USB
+ * HID Handler for ESP32-S3
+ * Handles USB HID keyboard and mouse operations using ESP32-S3's native USB
+ *
+ * IMPORTANT: In Arduino IDE, set:
+ *   Tools > USB Mode > "USB-OTG (TinyUSB)"
+ *   Tools > USB CDC On Boot > "Enabled" (for Serial + HID)
  */
 
 #include "hid_handler.h"
 #include <Arduino.h>
 
-// Try to include ESP32 USB HID libraries
-// These are available when "USB CDC On Boot" is enabled in Arduino IDE
-#if defined(ARDUINO_USB_MODE) && ARDUINO_USB_MODE == 1
-  // USB is enabled - use real USB HID classes
-  #include "USB.h"
-  #include "USBHIDKeyboard.h"
-  #include "USBHIDMouse.h"
+// ESP32-S3 has native USB HID support
+#include "USB.h"
+#include "USBHIDKeyboard.h"
+#include "USBHIDMouse.h"
 
-  USBHIDKeyboard Keyboard;
-  USBHIDMouse Mouse;
+// Create HID devices
+USBHIDKeyboard Keyboard;
+USBHIDMouse Mouse;
 
-  #define USB_HID_AVAILABLE 1
-#else
-  // USB not enabled - provide stub implementations
-  #warning "USB Mode not enabled! Set Tools > USB Mode to 'USB-OTG (TinyUSB)' and enable 'USB CDC On Boot'"
+#define USB_HID_AVAILABLE 1
 
-  class StubUSB {
-  public:
-    void begin() { Serial.println("WARNING: USB HID not available - USB mode not enabled"); }
-  };
-
-  class StubKeyboard {
-  public:
-    void begin() {}
-    void end() {}
-    void press(uint8_t) {}
-    void release(uint8_t) {}
-    void releaseAll() {}
-    void write(uint8_t) {}
-    size_t print(const String& s) { return s.length(); }
-    size_t println(const String& s) { return s.length() + 1; }
-  };
-
-  class StubMouse {
-  public:
-    void begin() {}
-    void end() {}
-    void move(int8_t x, int8_t y, int8_t wheel = 0) {}
-    void press(uint8_t b = 1) {}
-    void release(uint8_t b = 1) {}
-    void click(uint8_t b = 1) {}
-  };
-
-  StubUSB USB;
-  StubKeyboard Keyboard;
-  StubMouse Mouse;
-
-  #define USB_HID_AVAILABLE 0
-
-  // Define missing key constants for stub mode
-  #define KEY_LEFT_CTRL   0x80
-  #define KEY_LEFT_SHIFT  0x81
-  #define KEY_LEFT_ALT    0x82
-  #define KEY_LEFT_GUI    0x83
-  #define KEY_RIGHT_CTRL  0x84
-  #define KEY_RIGHT_SHIFT 0x85
-  #define KEY_RIGHT_ALT   0x86
-  #define KEY_RIGHT_GUI   0x87
-  #define KEY_UP_ARROW    0xDA
-  #define KEY_DOWN_ARROW  0xD9
-  #define KEY_LEFT_ARROW  0xD8
-  #define KEY_RIGHT_ARROW 0xD7
-  #define KEY_BACKSPACE   0xB2
-  #define KEY_TAB         0xB3
-  #define KEY_RETURN      0xB0
-  #define KEY_ESC         0xB1
-  #define KEY_DELETE      0xD4
-  #define KEY_F1          0xC2
-  #define KEY_F2          0xC3
-  #define KEY_F3          0xC4
-  #define KEY_F4          0xC5
-  #define KEY_F5          0xC6
-  #define KEY_F6          0xC7
-  #define KEY_F7          0xC8
-  #define KEY_F8          0xC9
-  #define KEY_F9          0xCA
-  #define KEY_F10         0xCB
-  #define KEY_F11         0xCC
-  #define KEY_F12         0xCD
-  #define MOUSE_LEFT      0x01
-  #define MOUSE_RIGHT     0x02
-  #define MOUSE_MIDDLE    0x04
+// LED pin - T-Dongle-S3 doesn't have standard LED_BUILTIN, use onboard LED
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 39  // T-Dongle-S3 onboard LED (active LOW)
 #endif
-
-// LED pin
 const int LED_PIN = LED_BUILTIN;
 
 // Mouse Jiggler state
@@ -102,28 +36,31 @@ static int jiggleDiameter = 2; // configurable diameter
 static String jiggleType = "simple"; // simple, circles, random
 
 void setupHID() {
-  // Initialize USB HID
+  Serial.println("Initializing USB HID...");
+
+  // Initialize HID devices first
   Keyboard.begin();
-  USB.begin();
   Mouse.begin();
+
+  // Then start USB stack
+  USB.begin();
+
+  // Give USB time to enumerate
+  delay(1000);
 
   // Initialize LED
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN, HIGH);  // T-Dongle-S3 LED is active LOW, HIGH = off
 
   // Startup indication
   blinkLED(3, 200);
 
-  #if USB_HID_AVAILABLE
-    Serial.println("USB HID initialized successfully");
-  #else
-    Serial.println("USB HID stub mode - HID functions will not work!");
-    Serial.println("To enable: Tools > USB Mode > 'USB-OTG (TinyUSB)'");
-    Serial.println("          Tools > USB CDC On Boot > 'Enabled'");
-  #endif
+  Serial.println("USB HID initialized successfully");
+  Serial.println("If HID is not working, check Arduino IDE settings:");
+  Serial.println("  Tools > USB Mode > USB-OTG (TinyUSB)");
 }
 
-void handleJiggler() {
+void updateJiggler() {
   if (!jigglerEnabled) return;
 
   unsigned long currentTime = millis();
@@ -178,6 +115,57 @@ void disableJiggler() {
 
 bool isJigglerEnabled() {
   return jigglerEnabled;
+}
+
+void processKeyCommand(String key, bool ctrl, bool alt, bool shift, bool gui) {
+  if (key.length() == 0) return;
+
+  Serial.print("Key Capture: " + key);
+  if (ctrl) Serial.print(" +CTRL");
+  if (alt) Serial.print(" +ALT");
+  if (shift) Serial.print(" +SHIFT");
+  if (gui) Serial.print(" +GUI");
+  Serial.println();
+
+  // Apply modifiers
+  if (ctrl) Keyboard.press(KEY_LEFT_CTRL);
+  if (alt) Keyboard.press(KEY_LEFT_ALT);
+  if (shift) Keyboard.press(KEY_LEFT_SHIFT);
+  if (gui) Keyboard.press(KEY_LEFT_GUI);
+
+  // Handle special keys or single characters
+  if (key.length() == 1) {
+    Keyboard.write(key[0]);
+  } 
+  else if (key == "Enter") Keyboard.write(KEY_RETURN);
+  else if (key == "Escape") Keyboard.write(KEY_ESC);
+  else if (key == "Tab") Keyboard.write(KEY_TAB);
+  else if (key == "Backspace") Keyboard.write(KEY_BACKSPACE);
+  else if (key == "Delete") Keyboard.write(KEY_DELETE);
+  else if (key == "ArrowUp") Keyboard.write(KEY_UP_ARROW);
+  else if (key == "ArrowDown") Keyboard.write(KEY_DOWN_ARROW);
+  else if (key == "ArrowLeft") Keyboard.write(KEY_LEFT_ARROW);
+  else if (key == "ArrowRight") Keyboard.write(KEY_RIGHT_ARROW);
+  else if (key == "F1") Keyboard.write(KEY_F1);
+  else if (key == "F2") Keyboard.write(KEY_F2);
+  else if (key == "F3") Keyboard.write(KEY_F3);
+  else if (key == "F4") Keyboard.write(KEY_F4);
+  else if (key == "F5") Keyboard.write(KEY_F5);
+  else if (key == "F6") Keyboard.write(KEY_F6);
+  else if (key == "F7") Keyboard.write(KEY_F7);
+  else if (key == "F8") Keyboard.write(KEY_F8);
+  else if (key == "F9") Keyboard.write(KEY_F9);
+  else if (key == "F10") Keyboard.write(KEY_F10);
+  else if (key == "F11") Keyboard.write(KEY_F11);
+  else if (key == "F12") Keyboard.write(KEY_F12);
+  else if (key == "PageUp") Keyboard.write(KEY_PAGE_UP);
+  else if (key == "PageDown") Keyboard.write(KEY_PAGE_DOWN);
+  else if (key == "Home") Keyboard.write(KEY_HOME);
+  else if (key == "End") Keyboard.write(KEY_END);
+  else if (key == "Insert") Keyboard.write(KEY_INSERT);
+
+  // Release all modifiers
+  Keyboard.releaseAll();
 }
 
 void processHIDCommand(String cmd) {
@@ -505,11 +493,7 @@ void processHIDCommand(String cmd) {
   else if (cmd == "STATUS") {
     String status = "STATUS:";
     status += jigglerEnabled ? "Jiggler=ON" : "Jiggler=OFF";
-    #if USB_HID_AVAILABLE
-      status += ",USB=ENABLED";
-    #else
-      status += ",USB=DISABLED";
-    #endif
+    status += ",USB=ENABLED";
     Serial.println(status);
   }
   else if (cmd == "LED_ON") {

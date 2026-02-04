@@ -37,17 +37,8 @@ void setup() {
   delay(100);
   Serial.println("ESP32-S3 WiFi USB HID is booting up...");
 
-  // Initialize USB HID
-  setupHID();
-
   // Initialize preferences (replaces EEPROM on ESP32)
   setupPreferences();
-
-  // Initialize ST7735 LCD display
-  setupDisplay();
-
-  // Initialize LittleFS
-  setupLittleFS();
 
   // Load and connect to WiFi
   loadWiFiCredentials();
@@ -63,8 +54,17 @@ void setup() {
     startAPMode();
   }
 
+  // Initialize ST7735 LCD display
+  setupDisplay();
+
+  // Initialize LittleFS
+  setupLittleFS();
+
   // Setup web server
   setupWebServer();
+
+  // Initialize USB HID
+  setupHID();
 
   if (isAPMode) {
     Serial.println("AP Mode - IP: 192.168.4.1");
@@ -82,5 +82,5 @@ void loop() {
   handleWebClients();
 
   // Handle mouse jiggler
-  handleJiggler();
+  updateJiggler();
 }
