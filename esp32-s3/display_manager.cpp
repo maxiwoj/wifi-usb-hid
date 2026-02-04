@@ -59,18 +59,6 @@ void setupDisplay() {
   Serial.print("x");
   Serial.println(display.height());
 
-  // Test pattern - shows colored rectangles to verify display is working
-  Serial.println("Showing test pattern...");
-  display.fillScreen(COLOR_RED);
-  delay(500);
-  display.fillScreen(COLOR_GREEN);
-  delay(500);
-  display.fillScreen(COLOR_BLUE);
-  delay(500);
-  display.fillScreen(COLOR_WHITE);
-  delay(500);
-  Serial.println("Test pattern complete");
-
   // Show formatted startup logo
   showStartupLogo();
 }
