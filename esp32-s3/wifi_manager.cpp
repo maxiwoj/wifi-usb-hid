@@ -18,30 +18,14 @@ void loadWiFiNetworks() {
   knownNetworks.clear();
   int count = preferences.getInt("wifi_count", 0);
   
-  // Backward compatibility: check if "ssid" exists from old version
-  String oldSSID = preferences.getString("ssid", "");
-  String oldPass = preferences.getString("password", "");
-  
-  if (count == 0 && oldSSID.length() > 0) {
-    WiFiNetwork net = {oldSSID, oldPass};
-    knownNetworks.push_back(net);
-    // Migrate to new format
-    preferences.putInt("wifi_count", 1);
-    preferences.putString("ssid0", oldSSID);
-    preferences.putString("pass0", oldPass);
-    // Remove old keys to complete migration
-    preferences.remove("ssid");
-    preferences.remove("password");
-  } else {
-    for (int i = 0; i < count; i++) {
-      String ssidKey = "ssid" + String(i);
-      String passKey = "pass" + String(i);
-      WiFiNetwork net;
-      net.ssid = preferences.getString(ssidKey.c_str(), "");
-      net.password = preferences.getString(passKey.c_str(), "");
-      if (net.ssid.length() > 0) {
-        knownNetworks.push_back(net);
-      }
+  for (int i = 0; i < count; i++) {
+    String ssidKey = "ssid" + String(i);
+    String passKey = "pass" + String(i);
+    WiFiNetwork net;
+    net.ssid = preferences.getString(ssidKey.c_str(), "");
+    net.password = preferences.getString(passKey.c_str(), "");
+    if (net.ssid.length() > 0) {
+      knownNetworks.push_back(net);
     }
   }
 }
