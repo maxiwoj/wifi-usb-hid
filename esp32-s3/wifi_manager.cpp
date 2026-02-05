@@ -30,30 +30,6 @@ void loadWiFiNetworks() {
   }
 }
 
-bool addWiFiNetwork(String ssid, String password) {
-  // Check if it already exists
-  for (const auto& net : knownNetworks) {
-    if (net.ssid == ssid) {
-      // Update password if SSID exists
-      return saveWiFiCredentials(ssid, password);
-    }
-  }
-
-  if (knownNetworks.size() < MAX_WIFI_NETWORKS) {
-    WiFiNetwork net = {ssid, password};
-    knownNetworks.push_back(net);
-    
-    int index = knownNetworks.size() - 1;
-    preferences.putString(("ssid" + String(index)).c_str(), ssid);
-    preferences.putString(("pass" + String(index)).c_str(), password);
-    preferences.putInt("wifi_count", knownNetworks.size());
-    return true;
-  } else {
-    Serial.println("Max WiFi networks reached");
-    return false;
-  }
-}
-
 void deleteWiFiNetwork(int index) {
   if (index >= 0 && index < knownNetworks.size()) {
     knownNetworks.erase(knownNetworks.begin() + index);
@@ -71,21 +47,29 @@ void deleteWiFiNetwork(int index) {
 }
 
 bool saveWiFiCredentials(String ssid, String password) {
-  // Check if it exists and update, otherwise add
-  bool found = false;
+  // Check if it already exists
   for (int i = 0; i < knownNetworks.size(); i++) {
     if (knownNetworks[i].ssid == ssid) {
       knownNetworks[i].password = password;
       preferences.putString(("pass" + String(i)).c_str(), password);
-      found = true;
       return true;
     }
   }
   
-  if (!found) {
-    return addWiFiNetwork(ssid, password);
+  // Not found, try to add new if there is space
+  if (knownNetworks.size() < MAX_WIFI_NETWORKS) {
+    WiFiNetwork net = {ssid, password};
+    knownNetworks.push_back(net);
+    
+    int index = knownNetworks.size() - 1;
+    preferences.putString(("ssid" + String(index)).c_str(), ssid);
+    preferences.putString(("pass" + String(index)).c_str(), password);
+    preferences.putInt("wifi_count", knownNetworks.size());
+    return true;
+  } else {
+    Serial.println("Max WiFi networks reached");
+    return false;
   }
-  return false;
 }
 
 bool connectToWiFi(String ssid, String password) {

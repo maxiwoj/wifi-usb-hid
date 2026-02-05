@@ -11,9 +11,8 @@ struct WiFiNetwork {
 
 void setupPreferences();
 void loadWiFiNetworks();
-bool addWiFiNetwork(String ssid, String password);
 void deleteWiFiNetwork(int index);
-bool saveWiFiCredentials(String ssid, String password); // Keep for compatibility or replace
+bool saveWiFiCredentials(String ssid, String password);
 bool connectToWiFi(String ssid, String password);
 bool connectToAnyWiFi();
 void startAPMode();
