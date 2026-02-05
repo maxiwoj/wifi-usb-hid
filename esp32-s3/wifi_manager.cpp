@@ -46,7 +46,7 @@ void deleteWiFiNetwork(int index) {
   }
 }
 
-bool saveWiFiCredentials(String ssid, String password) {
+bool addWifiNetwork(String ssid, String password) {
   // Check if it already exists
   for (int i = 0; i < knownNetworks.size(); i++) {
     if (knownNetworks[i].ssid == ssid) {

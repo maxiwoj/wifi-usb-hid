@@ -323,7 +323,7 @@ void handleSetWiFi() {
     String ssid = SERVER_ARG("ssid");
     String password = SERVER_ARG("password");
 
-    if (saveWiFiCredentials(ssid, password)) {
+    if (addWifiNetwork(ssid, password)) {
       displayAction("WiFi saved: " + ssid);
       String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved.\"}";
       SERVER_SEND(200, "application/json", json);
