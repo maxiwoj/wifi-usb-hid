@@ -5,6 +5,7 @@
 #define PREFS_NAMESPACE "wifi-hid"
 #define MAX_SSID_LEN 32
 #define MAX_PASS_LEN 64
+#define MAX_WIFI_NETWORKS 5
 
 // LittleFS settings for script storage
 #define MAX_SCRIPT_NAME_LEN 32
