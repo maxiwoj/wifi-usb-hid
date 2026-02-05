@@ -29,16 +29,6 @@ void loadWiFiNetworks() {
         knownNetworks.push_back(net);
       }
     }
-  } else {
-    // Check if there's an old SSID at address 0 (before magic was implemented)
-    String oldSSID = readStringFromEEPROM(0, 32);
-    if (oldSSID.length() > 0 && (uint8_t)oldSSID[0] != 0xFF) {
-      String oldPass = readStringFromEEPROM(100, 64);
-      WiFiNetwork net = {oldSSID, oldPass};
-      knownNetworks.push_back(net);
-      // We don't force migration to new format here, 
-      // it will happen when the user saves a new network
-    }
   }
 }
 
