@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Quick Scripts - WiFi USB HID</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="/favicon.png">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Manage Quick Scripts</h1>
+        <p style="color: #6b7280; margin-top: 5px;">Create and edit quick script buttons for any operating system</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-info" onclick="location.href='/'">Back to Home</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Select Operating System</h2>
+      <select id="osManagerSelect">
+        <option value="Windows">Windows</option>
+        <option value="MacOS">MacOS</option>
+        <option value="Linux">Linux</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>Add/Edit Quick Script</h2>
+      <div style="display: grid; gap: 10px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Script ID:</label>
+          <input type="text" id="quickScriptId" placeholder="e.g., editor, terminal, my-custom-script">
+          <p style="font-size: 12px; color: #6b7280; margin: 5px 0 0 0;">
+            Unique identifier (lowercase, no spaces). Use same ID to update existing script.
+          </p>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Label:</label>
+          <input type="text" id="quickScriptLabel" placeholder="e.g., Open Editor, My Script">
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">DuckyScript:</label>
+          <textarea id="quickScriptCode" placeholder="Enter DuckyScript here...
+Example:
+GUI r
+DELAY 500
+STRING notepad
+ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
+          <p style="font-size: 12px; color: #6b7280; margin: 5px 0 0 0;">
+            Use standard DuckyScript syntax
+          </p>
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 600;">Button Color:</label>
+          <select id="quickScriptClass">
+            <option value="btn-primary">Primary (Purple)</option>
+            <option value="btn-success">Success (Green)</option>
+            <option value="btn-warning">Warning (Orange)</option>
+            <option value="btn-info">Info (Blue)</option>
+            <option value="btn-danger">Danger (Red)</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="saveQuickScript()">Save Quick Script</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick Scripts List</h2>
+      <p style="color: #6b7280; margin-bottom: 15px;">All quick scripts for <strong id="currentOSName">Windows</strong></p>
+      <div id="quickScriptsManager" style="min-height: 50px;">
+        <p style="color: #6b7280; font-style: italic;">Loading...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div class="activity-log" id="activityLog"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    function loadQuickScriptsManager() {
+      const managerDiv = document.getElementById('quickScriptsManager');
+      if (!managerDiv) return;
+
+      const os = document.getElementById('osManagerSelect').value;
+      managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
+
+      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+        .then(response => response.json())
+        .then(scripts => {
+          if (scripts.length === 0) {
+            managerDiv.innerHTML = '<p style="color: #6b7280; font-style: italic;">No quick scripts for this OS. Add one above.</p>';
+            return;
+          }
+
+          managerDiv.innerHTML = '';
+          scripts.forEach(script => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; background: #f9fafb;';
+
+            const infoDiv = document.createElement('div');
+            infoDiv.style.flex = '1';
+            infoDiv.innerHTML = '<strong>' + script.label + '</strong><br><small style="color: #6b7280;">ID: ' + script.id + '</small>';
+
+            const btnGroup = document.createElement('div');
+            btnGroup.style.cssText = 'display: flex; gap: 5px;';
+
+            // Edit button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-primary';
+            editBtn.textContent = 'Edit';
+            editBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            editBtn.onclick = function() { editQuickScript(script); };
+            btnGroup.appendChild(editBtn);
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.cssText = 'padding: 5px 15px; font-size: 12px;';
+            deleteBtn.onclick = function() { deleteQuickScript(os, script.id); };
+            btnGroup.appendChild(deleteBtn);
+
+            item.appendChild(infoDiv);
+            item.appendChild(btnGroup);
+            managerDiv.appendChild(item);
+          });
+        })
+        .catch(error => {
+          managerDiv.innerHTML = '<p style="color: #ef4444;">Error loading quick scripts: ' + error + '</p>';
+        });
+    }
+
+    function saveQuickScript() {
+      const os = document.getElementById('osManagerSelect').value;
+      const id = document.getElementById('quickScriptId').value.trim();
+      const label = document.getElementById('quickScriptLabel').value.trim();
+      const script = document.getElementById('quickScriptCode').value;
+      const btnClass = document.getElementById('quickScriptClass').value;
+
+      if (!id || !label || !script) {
+        log('Error: ID, label, and script are required');
+        return;
+      }
+
+      fetch('/api/quickscripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) +
+              '&id=' + encodeURIComponent(id) +
+              '&label=' + encodeURIComponent(label) +
+              '&script=' + encodeURIComponent(script) +
+              '&class=' + encodeURIComponent(btnClass)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick script saved');
+          document.getElementById('quickScriptId').value = '';
+          document.getElementById('quickScriptLabel').value = '';
+          document.getElementById('quickScriptCode').value = '';
+          loadQuickScriptsManager();
+        } else {
+          log('Error: ' + (data.message || 'Failed to save quick script'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    function editQuickScript(script) {
+      document.getElementById('quickScriptId').value = script.id;
+      document.getElementById('quickScriptLabel').value = script.label;
+      document.getElementById('quickScriptCode').value = script.script;
+      document.getElementById('quickScriptClass').value = script.class;
+
+      // Scroll to form
+      document.querySelector('h2').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function deleteQuickScript(os, id) {
+      if (!confirm('Delete this quick script?')) {
+        return;
+      }
+
+      fetch('/api/quickscripts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'os=' + encodeURIComponent(os) + '&id=' + encodeURIComponent(id)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          log('Quick script deleted');
+          loadQuickScriptsManager();
+        } else {
+          log('Error: ' + (data.message || 'Failed to delete quick script'));
+        }
+      })
+      .catch(error => {
+        log('Error: ' + error);
+      });
+    }
+
+    // Initialize the management page
+    (function() {
+      log('Quick Scripts Manager loaded');
+      loadCustomOS();
+
+      // Set up change handler for OS selector
+      const osManagerSelect = document.getElementById('osManagerSelect');
+      if (osManagerSelect) {
+        osManagerSelect.addEventListener('change', function() {
+          // Save to localStorage
+          saveSelectedOS(this.value);
+
+          // Update current OS name display
+          const currentOSName = document.getElementById('currentOSName');
+          if (currentOSName) {
+            currentOSName.textContent = this.value;
+          }
+
+          // Reload scripts for new OS
+          loadQuickScriptsManager();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

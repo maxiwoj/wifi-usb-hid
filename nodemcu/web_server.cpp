@@ -61,16 +61,70 @@ bool httpsEnabled = false;
 #define SERVER_REQUEST_AUTH() server.requestAuthentication()
 #endif
 
-void serveStaticFile(String path, String contentType) {
-  if (littlefsAvailable) {
+String getContentType(String filename) {
+  if (filename.endsWith(".html")) return "text/html";
+  else if (filename.endsWith(".css")) return "text/css";
+  else if (filename.endsWith(".js")) return "application/javascript";
+  else if (filename.endsWith(".png")) return "image/png";
+  else if (filename.endsWith(".jpg")) return "image/jpeg";
+  else if (filename.endsWith(".ico")) return "image/x-icon";
+  else if (filename.endsWith(".txt")) return "text/plain";
+  else if (filename.endsWith(".pdf")) return "application/pdf";
+  return "text/plain";
+}
+
+bool handleStaticFile(String path) {
+  if (!littlefsAvailable) return false;
+
+  // Default to index.html for root
+  if (path == "/") path = "/index.html";
+
+  String contentType = getContentType(path);
+  
+  // Try /www directory first
+  String wwwPath = "/www" + path;
+  if (LittleFS.exists(wwwPath)) {
+    File file = LittleFS.open(wwwPath, "r");
+    if (file) {
+      SERVER_STREAM_FILE(file, contentType);
+      file.close();
+      return true;
+    }
+  }
+
+  // Fallback to root
+  if (LittleFS.exists(path)) {
     File file = LittleFS.open(path, "r");
     if (file) {
       SERVER_STREAM_FILE(file, contentType);
       file.close();
-      return;
+      return true;
     }
   }
-  SERVER_SEND(404, "text/plain", "File not found");
+
+  return false;
+}
+
+void serveStaticFile(String path, String contentType) {
+  if (!handleStaticFile(path)) {
+    SERVER_SEND(404, "text/plain", "File not found");
+  }
+}
+
+// Try to serve the file directly
+void handleNotFound() {
+  if (!checkAuthentication()) return;
+  
+  String path = server.uri();
+#if ENABLE_HTTPS
+  if (httpsEnabled && secureServer.client()) {
+    path = secureServer.uri();
+  }
+#endif
+
+  if (handleStaticFile(path)) return;
+  
+  SERVER_SEND(404, "text/plain", "File not found: " + path);
 }
 
 bool checkAuthentication() {
@@ -82,15 +136,7 @@ bool checkAuthentication() {
 }
 
 void setupWebServer() {
-  // Register routes on HTTP server
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/setup", HTTP_GET, handleSetup);
-  server.on("/manage-actions.html", HTTP_GET, handleManageActions);
-  server.on("/manage-os.html", HTTP_GET, handleManageOS);
-  server.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
-  server.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
-  server.on("/style.css", HTTP_GET, handleCSS);
-  server.on("/script.js", HTTP_GET, handleJS);
+  // Register API routes on HTTP server
   server.on("/api/command", HTTP_POST, handleCommand);
   server.on("/api/script", HTTP_POST, handleScript);
   server.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -112,11 +158,14 @@ void setupWebServer() {
   server.on("/api/customos", HTTP_GET, handleListCustomOS);
   server.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   server.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
-  server.on("/manage-files.html", HTTP_GET, handleManageFiles);
   server.on("/api/files", HTTP_GET, handleListFiles);
   server.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   server.on("/api/files/delete", HTTP_POST, handleFileDelete);
   server.on("/api/files/download", HTTP_GET, handleFileDownload);
+  server.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
+
+  // Catch-all for static files
+  server.onNotFound(handleNotFound);
 
   server.begin();
   Serial.println("HTTP server started on port 80");
@@ -131,15 +180,7 @@ void setupWebServer() {
 
   secureServer.getServer().setRSACert(&serverCert, &serverKey);
 
-  // Register same routes on HTTPS server
-  secureServer.on("/", HTTP_GET, handleRoot);
-  secureServer.on("/setup", HTTP_GET, handleSetup);
-  secureServer.on("/manage-actions.html", HTTP_GET, handleManageActions);
-  secureServer.on("/manage-os.html", HTTP_GET, handleManageOS);
-  secureServer.on("/manage-scripts.html", HTTP_GET, handleManageScripts);
-  secureServer.on("/trackpad-fullscreen.html", HTTP_GET, handleTrackpadFullscreen);
-  secureServer.on("/style.css", HTTP_GET, handleCSS);
-  secureServer.on("/script.js", HTTP_GET, handleJS);
+  // Register API routes on HTTPS server
   secureServer.on("/api/command", HTTP_POST, handleCommand);
   secureServer.on("/api/script", HTTP_POST, handleScript);
   secureServer.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -161,11 +202,14 @@ void setupWebServer() {
   secureServer.on("/api/customos", HTTP_GET, handleListCustomOS);
   secureServer.on("/api/customos", HTTP_POST, handleSaveCustomOS);
   secureServer.on("/api/customos/delete", HTTP_POST, handleDeleteCustomOS);
-  secureServer.on("/manage-files.html", HTTP_GET, handleManageFiles);
   secureServer.on("/api/files", HTTP_GET, handleListFiles);
   secureServer.on("/api/files/upload", HTTP_POST, handleFileUploadDone, handleFileUpload);
   secureServer.on("/api/files/delete", HTTP_POST, handleFileDelete);
   secureServer.on("/api/files/download", HTTP_GET, handleFileDownload);
+  secureServer.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
+
+  // Secure catch-all
+  secureServer.onNotFound(handleNotFound);
 
   secureServer.begin();
   httpsEnabled = true;
@@ -185,36 +229,6 @@ void handleWebClients() {
     secureServer.handleClient();
   }
 #endif
-}
-
-void handleRoot() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/index.html", "text/html");
-}
-
-void handleSetup() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/setup.html", "text/html");
-}
-
-void handleManageActions() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/manage-actions.html", "text/html");
-}
-
-void handleManageOS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/manage-os.html", "text/html");
-}
-
-void handleCSS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/style.css", "text/css");
-}
-
-void handleJS() {
-  if (!checkAuthentication()) return;
-  serveStaticFile("/script.js", "application/javascript");
 }
 
 void handleCommand() {
@@ -785,7 +799,6 @@ void handleDeleteQuickScript() {
 }
 
 // File Management Handlers
-
 void handleManageFiles() {
   if (!checkAuthentication()) return;
   serveStaticFile("/manage-files.html", "text/html");
@@ -793,21 +806,20 @@ void handleManageFiles() {
 
 void handleListFiles() {
   if (!checkAuthentication()) return;
-
   if (!littlefsAvailable) {
     SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
     return;
   }
-
+  String path = "/";
+  if (SERVER_HAS_ARG("path")) {
+    path = SERVER_ARG("path");
+  }
+  if (!path.startsWith("/")) path = "/" + path;
   size_t totalBytes = 0;
   size_t usedBytes = 0;
-
-  if (!getFilesystemInfo(totalBytes, usedBytes)) {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to get filesystem info\"}");
-    return;
-  }
-
+  getFilesystemInfo(totalBytes, usedBytes);
   String json = "{";
+  json += "\"path\":\"" + escapeJson(path) + "\",";
   json += "\"filesystem\":{";
   json += "\"total\":" + String(totalBytes) + ",";
   json += "\"used\":" + String(usedBytes) + ",";
@@ -815,24 +827,60 @@ void handleListFiles() {
   json += "},";
   json += "\"files\":[";
 
-  Dir dir = LittleFS.openDir("/");
-  bool first = true;
+  Dir dir = LittleFS.openDir(path);
 
+  bool first = true;
   while (dir.next()) {
     if (!first) json += ",";
     first = false;
+    String fileName = dir.fileName();
+    // Ensure fileName is a full path
+    if (!fileName.startsWith("/")) {
+        String fullPath = path;
+        if (!fullPath.endsWith("/")) fullPath += "/";
+        fullPath += fileName;
+        fileName = fullPath;
+    }
 
-    String filename = dir.fileName();
-    size_t filesize = dir.fileSize();
-
+    bool isDir = dir.isDirectory();
+    size_t fileSize = isDir ? 0 : dir.fileSize();
     json += "{";
-    json += "\"name\":\"" + escapeJson(filename) + "\",";
-    json += "\"size\":" + String(filesize);
+    json += "\"name\":\"" + escapeJson(fileName) + "\",";
+    json += "\"size\":" + String(fileSize) + ",";
+    json += "\"is_dir\":" + String(isDir ? "true" : "false");
     json += "}";
   }
-
   json += "]}";
   SERVER_SEND(200, "application/json", json);
+}
+
+
+void handleCreateDir() {
+  if (!checkAuthentication()) return;
+
+  if (!littlefsAvailable) {
+    SERVER_SEND(503, "application/json", "{\"status\":\"error\",\"message\":\"LittleFS not available\"}");
+    return;
+  }
+
+  if (!SERVER_HAS_ARG("path")) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing path parameter\"}");
+    return;
+  }
+
+  String path = SERVER_ARG("path");
+  if (!path.startsWith("/")) path = "/" + path;
+
+  if (LittleFS.exists(path)) {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Directory already exists\"}");
+    return;
+  }
+
+  if (LittleFS.mkdir(path)) {
+     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Directory created\"}");
+  } else {
+     SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to create directory\"}");
+  }
 }
 
 // Global variable for file upload
@@ -850,9 +898,19 @@ void handleFileUpload() {
       return;
     }
 
+    // Check if path parameter exists to upload to specific directory
+    String path = "/";
+    if (SERVER_HAS_ARG("path")) {
+        path = SERVER_ARG("path");
+        if (!path.endsWith("/")) path += "/";
+    }
+
+    // Combine path and filename
+    String fullPath = path + filename;
+
     // Sanitize filename
-    filename = sanitizeFilename(filename);
-    Serial.println("Upload start: " + filename);
+    fullPath = sanitizeFilename(fullPath);
+    Serial.println("Upload start: " + fullPath);
 
     // Check available space (rough estimate)
     if (!hasAvailableSpace(100000)) { // Reserve 100KB minimum
@@ -861,7 +919,7 @@ void handleFileUpload() {
     }
 
     // Open file for writing
-    uploadFile = LittleFS.open(filename, "w");
+    uploadFile = LittleFS.open(fullPath, "w");
     if (!uploadFile) {
       Serial.println("Upload error: Failed to open file for writing");
     }
@@ -870,7 +928,6 @@ void handleFileUpload() {
     // Write chunk to file
     if (uploadFile) {
       uploadFile.write(upload.buf, upload.currentSize);
-      Serial.print(".");
     }
   }
   else if (upload.status == UPLOAD_FILE_END) {
@@ -909,23 +966,28 @@ void handleFileDelete() {
   }
 
   String filename = SERVER_ARG("name");
+  if (!filename.startsWith("/")) filename = "/" + filename;
 
-  // Ensure filename starts with /
-  if (!filename.startsWith("/")) {
-    filename = "/" + filename;
+  File file = LittleFS.open(filename, "r");
+  bool isDir = false;
+  if (file) {
+    isDir = file.isDirectory();
+    file.close();
   }
 
-  if (!LittleFS.exists(filename)) {
-    SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"File not found\"}");
-    return;
-  }
-
-  if (LittleFS.remove(filename)) {
-    Serial.println("File deleted: " + filename);
-    displayAction("File deleted: " + filename);
-    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"File deleted\"}");
+  bool success = false;
+  if (isDir) {
+    success = LittleFS.rmdir(filename);
   } else {
-    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete file\"}");
+    success = LittleFS.remove(filename);
+  }
+
+  if (success) {
+    Serial.println("Deleted: " + filename);
+    displayAction("Deleted: " + filename);
+    SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Item deleted\"}");
+  } else {
+    SERVER_SEND(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to delete item (dir must be empty)\"}");
   }
 }
 
@@ -943,20 +1005,23 @@ void handleFileDownload() {
   }
 
   String filename = SERVER_ARG("name");
+  if (!filename.startsWith("/")) filename = "/" + filename;
 
-  // Ensure filename starts with /
-  if (!filename.startsWith("/")) {
-    filename = "/" + filename;
-  }
-
-  if (!LittleFS.exists(filename)) {
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    // Check if it's a directory
+    Dir dir = LittleFS.openDir(filename);
+    if (dir.next()) {
+      SERVER_SEND(400, "text/plain", "Cannot download directory");
+      return;
+    }
     SERVER_SEND(404, "text/plain", "File not found");
     return;
   }
 
-  File file = LittleFS.open(filename, "r");
-  if (!file) {
-    SERVER_SEND(500, "text/plain", "Failed to open file");
+  if (file.isDirectory()) {
+    file.close();
+    SERVER_SEND(400, "text/plain", "Cannot download directory");
     return;
   }
 
@@ -967,7 +1032,6 @@ void handleFileDownload() {
     cleanFilename = filename.substring(lastSlash + 1);
   }
 
-  // Set Content-Disposition header for download
   String contentDisposition = "attachment; filename=\"" + cleanFilename + "\"";
 
 #if ENABLE_HTTPS

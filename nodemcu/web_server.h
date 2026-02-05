@@ -6,12 +6,8 @@
 void setupWebServer();
 void handleWebClients();
 bool checkAuthentication();
-void handleRoot();
-void handleSetup();
-void handleManageActions();
-void handleManageOS();
-void handleCSS();
-void handleJS();
+
+// API Handlers
 void handleCommand();
 void handleScript();
 void handleJiggler();
@@ -33,13 +29,11 @@ void handleDeleteCustomOS();
 void handleListQuickScripts();
 void handleSaveQuickScript();
 void handleDeleteQuickScript();
-void handleManageScripts();
-void handleTrackpadFullscreen();
-void handleManageFiles();
 void handleListFiles();
 void handleFileUpload();
 void handleFileUploadDone();
 void handleFileDelete();
 void handleFileDownload();
+void handleCreateDir();
 
 #endif //WEB_SERVER_H

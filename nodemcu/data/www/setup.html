@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi Setup - USB HID Control</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary { background: #667eea; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-info { background: #3b82f6; color: white; }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    .network-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin: 15px 0;
+    }
+
+    .network-item {
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .network-item:hover {
+      background: #f3f4f6;
+      border-color: #667eea;
+    }
+
+    .network-item.selected {
+      background: #ede9fe;
+      border-color: #667eea;
+    }
+
+    .current-network {
+      background: #d1fae5;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .status-message {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .status-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+  <link rel="icon" type="image/png" href="/favicon.png">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>WiFi Configuration</h1>
+
+      <div id="currentNetwork" class="current-network">
+        <strong>Current Network:</strong> <span id="currentSSID">Loading...</span>
+      </div>
+
+      <button class="btn btn-info" onclick="scanNetworks()">Scan Networks</button>
+
+      <div id="networkList" class="network-list"></div>
+
+      <h2>WiFi Credentials</h2>
+      <input type="text" id="ssid" placeholder="Network SSID">
+      <input type="password" id="password" placeholder="Password">
+
+      <button class="btn btn-success" onclick="saveWiFi()">Save & Connect</button>
+      <button class="btn btn-primary" onclick="location.href='/'">Back to Control</button>
+
+      <div id="statusMessage" class="status-message"></div>
+    </div>
+  </div>
+
+  <script>
+    let selectedSSID = '';
+
+    function loadCurrentNetwork() {
+      fetch('/api/wifi')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('currentSSID').textContent = data.ssid || 'None';
+        });
+    }
+
+    function scanNetworks() {
+      const networkList = document.getElementById('networkList');
+      networkList.innerHTML = '<p>Scanning...</p>';
+
+      fetch('/api/scan')
+        .then(response => response.json())
+        .then(networks => {
+          if (networks.length === 0) {
+            networkList.innerHTML = '<p>No networks found</p>';
+            return;
+          }
+
+          networkList.innerHTML = '';
+          networks.forEach(network => {
+            const item = document.createElement('div');
+            item.className = 'network-item';
+            item.innerHTML = '<strong>' + network.ssid + '</strong><br>Signal: ' + network.rssi + ' dBm';
+            item.onclick = function() {
+              selectNetwork(network.ssid, item);
+            };
+            networkList.appendChild(item);
+          });
+        })
+        .catch(error => {
+          networkList.innerHTML = '<p>Error scanning networks</p>';
+        });
+    }
+
+    function selectNetwork(ssid, element) {
+      selectedSSID = ssid;
+      document.getElementById('ssid').value = ssid;
+
+      // Remove previous selection
+      const items = document.querySelectorAll('.network-item');
+      items.forEach(item => item.classList.remove('selected'));
+
+      // Add selection to clicked item
+      element.classList.add('selected');
+    }
+
+    function saveWiFi() {
+      const ssid = document.getElementById('ssid').value;
+      const password = document.getElementById('password').value;
+
+      if (!ssid) {
+        showStatus('Please enter a network SSID', 'error');
+        return;
+      }
+
+      fetch('/api/wifi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'ssid=' + encodeURIComponent(ssid) + '&password=' + encodeURIComponent(password)
+      })
+      .then(response => response.json())
+      .then(data => {
+        showStatus('WiFi credentials saved! Device will restart...', 'success');
+        setTimeout(() => {
+          location.href = '/';
+        }, 3000);
+      })
+      .catch(error => {
+        showStatus('Error saving credentials', 'error');
+      });
+    }
+
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.textContent = message;
+      statusDiv.className = 'status-message status-' + type;
+      statusDiv.style.display = 'block';
+
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Load current network on page load
+    loadCurrentNetwork();
+  </script>
+</body>
+</html>
