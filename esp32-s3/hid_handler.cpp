@@ -509,6 +509,11 @@ void processHIDCommand(String cmd) {
     digitalWrite(LED_PIN, LOW);
     Serial.println("LED off");
   }
+  else if (cmd == "RESTART") {
+    Serial.println("Restarting ESP32...");
+    delay(500);
+    ESP.restart();
+  }
 
   // Unknown command
   else {

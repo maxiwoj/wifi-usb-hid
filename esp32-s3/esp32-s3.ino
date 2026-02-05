@@ -40,25 +40,26 @@ void setup() {
   // Initialize preferences (replaces EEPROM on ESP32)
   setupPreferences();
 
-  // Load and connect to WiFi
-  loadWiFiCredentials();
-
-  if (currentSSID.length() > 0) {
-    Serial.println("Attempting to connect to saved network: " + currentSSID);
-    if (!connectToWiFi(currentSSID, currentPassword)) {
-      Serial.println("Failed to connect, starting AP mode");
-      startAPMode();
-    }
-  } else {
-    Serial.println("No saved credentials, starting AP mode");
-    startAPMode();
-  }
 
   // Initialize Storage (SD Card or LittleFS)
   setupStorage();
 
   // Initialize ST7735 LCD display
   setupDisplay();
+
+  // Load and connect to WiFi
+  loadWiFiNetworks();
+
+  if (knownNetworks.size() > 0) {
+    Serial.println("Attempting to connect to saved networks...");
+    if (!connectToAnyWiFi()) {
+      Serial.println("Failed to connect to any network, starting AP mode");
+      startAPMode();
+    }
+  } else {
+    Serial.println("No saved credentials, starting AP mode");
+    startAPMode();
+  }
 
   // Setup web server
   setupWebServer();
