@@ -24,12 +24,12 @@ void setup() {
 
   setupLittleFS();
 
-  loadWiFiCredentials();
+  loadWiFiNetworks();
  
-  if (currentSSID.length() > 0) {
-    Serial.println("Attempting to connect to saved network: " + currentSSID);
-    if (!connectToWiFi(currentSSID, currentPassword)) {
-      Serial.println("Failed to connect, starting AP mode");
+  if (knownNetworks.size() > 0) {
+    Serial.println("Attempting to connect to saved networks...");
+    if (!connectToAnyWiFi()) {
+      Serial.println("Failed to connect to any network, starting AP mode");
       startAPMode();
     }
   } else {

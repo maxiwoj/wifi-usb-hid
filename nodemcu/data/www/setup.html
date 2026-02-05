@@ -129,18 +129,25 @@
       <h1>WiFi Configuration</h1>
 
       <div id="currentNetwork" class="current-network">
-        <strong>Current Network:</strong> <span id="currentSSID">Loading...</span>
+        <strong>Status:</strong> <span id="wifiStatus">Loading...</span><br>
+        <strong>Current Connection:</strong> <span id="currentSSID">None</span>
       </div>
 
-      <button class="btn btn-info" onclick="scanNetworks()">Scan Networks</button>
+      <div id="savedNetworksContainer" style="margin-bottom: 20px;">
+        <h2>Saved Networks</h2>
+        <div id="savedNetworksList" class="network-list"></div>
+      </div>
+
+      <button class="btn btn-info" onclick="scanNetworks()">Scan Available Networks</button>
 
       <div id="networkList" class="network-list"></div>
 
-      <h2>WiFi Credentials</h2>
+      <h2>Add/Update WiFi Network</h2>
       <input type="text" id="ssid" placeholder="Network SSID">
       <input type="password" id="password" placeholder="Password">
 
-      <button class="btn btn-success" onclick="saveWiFi()">Save & Connect</button>
+      <button class="btn btn-success" onclick="saveWiFi()">Save Network</button>
+      <button class="btn btn-info" onclick="restartDevice()">Restart & Connect</button>
       <button class="btn btn-primary" onclick="location.href='/'">Back to Control</button>
 
       <div id="statusMessage" class="status-message"></div>
@@ -150,11 +157,46 @@
   <script>
     let selectedSSID = '';
 
-    function loadCurrentNetwork() {
+    function loadWiFiInfo() {
       fetch('/api/wifi')
         .then(response => response.json())
         .then(data => {
           document.getElementById('currentSSID').textContent = data.ssid || 'None';
+          document.getElementById('wifiStatus').textContent = data.mode === 'AP' ? 'Access Point Mode' : 'Station Mode';
+          
+          const savedList = document.getElementById('savedNetworksList');
+          savedList.innerHTML = '';
+          
+          if (!data.networks || data.networks.length === 0) {
+            savedList.innerHTML = '<p style="color: #6b7280; font-style: italic;">No saved networks.</p>';
+          } else {
+            data.networks.forEach(net => {
+              const item = document.createElement('div');
+              item.className = 'network-item';
+              item.style.display = 'flex';
+              item.style.justifyContent = 'space-between';
+              item.style.alignItems = 'center';
+              
+              const info = document.createElement('div');
+              info.innerHTML = '<strong>' + net.ssid + '</strong>';
+              info.onclick = () => selectNetwork(net.ssid, item);
+              
+              const deleteBtn = document.createElement('button');
+              deleteBtn.innerHTML = 'Delete';
+              deleteBtn.className = 'btn btn-primary';
+              deleteBtn.style.width = 'auto';
+              deleteBtn.style.padding = '5px 10px';
+              deleteBtn.style.margin = '0';
+              deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteWiFi(net.ssid);
+              };
+              
+              item.appendChild(info);
+              item.appendChild(deleteBtn);
+              savedList.appendChild(item);
+            });
+          }
         });
     }
 
@@ -190,7 +232,7 @@
       selectedSSID = ssid;
       document.getElementById('ssid').value = ssid;
 
-      // Remove previous selection
+      // Remove previous selection from all lists
       const items = document.querySelectorAll('.network-item');
       items.forEach(item => item.classList.remove('selected'));
 
@@ -214,13 +256,46 @@
       })
       .then(response => response.json())
       .then(data => {
-        showStatus('WiFi credentials saved! Device will restart...', 'success');
-        setTimeout(() => {
-          location.href = '/';
-        }, 3000);
+        if (data.status === 'ok') {
+          showStatus(data.message || 'WiFi network saved!', 'success');
+          loadWiFiInfo();
+        } else {
+          showStatus(data.message || 'Error saving credentials', 'error');
+        }
       })
       .catch(error => {
         showStatus('Error saving credentials', 'error');
+      });
+    }
+
+    function deleteWiFi(ssid) {
+      if (!confirm('Delete saved network: ' + ssid + '?')) return;
+      
+      fetch('/api/wifi/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'ssid=' + encodeURIComponent(ssid)
+      })
+      .then(response => response.json())
+      .then(data => {
+        showStatus('Network deleted', 'success');
+        loadWiFiInfo();
+      })
+      .catch(error => {
+        showStatus('Error deleting network', 'error');
+      });
+    }
+
+    function restartDevice() {
+      if (!confirm('Restart device to connect to saved networks?')) return;
+      
+      fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'cmd=RESTART'
+      })
+      .then(() => {
+        showStatus('Restarting... Please wait a few seconds and refresh.', 'success');
       });
     }
 
@@ -236,7 +311,7 @@
     }
 
     // Load current network on page load
-    loadCurrentNetwork();
+    loadWiFiInfo();
   </script>
 </body>
 </html>
