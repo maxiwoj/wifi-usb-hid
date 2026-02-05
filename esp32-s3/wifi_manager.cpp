@@ -30,13 +30,12 @@ void loadWiFiNetworks() {
   }
 }
 
-void addWiFiNetwork(String ssid, String password) {
+bool addWiFiNetwork(String ssid, String password) {
   // Check if it already exists
   for (const auto& net : knownNetworks) {
     if (net.ssid == ssid) {
       // Update password if SSID exists
-      saveWiFiCredentials(ssid, password);
-      return;
+      return saveWiFiCredentials(ssid, password);
     }
   }
 
@@ -48,11 +47,10 @@ void addWiFiNetwork(String ssid, String password) {
     preferences.putString(("ssid" + String(index)).c_str(), ssid);
     preferences.putString(("pass" + String(index)).c_str(), password);
     preferences.putInt("wifi_count", knownNetworks.size());
+    return true;
   } else {
-    // If full, replace the last one or just don't add? 
-    // Let's replace the last one for now or just return.
-    // Usually it's better to tell the user it's full.
     Serial.println("Max WiFi networks reached");
+    return false;
   }
 }
 
@@ -72,7 +70,7 @@ void deleteWiFiNetwork(int index) {
   }
 }
 
-void saveWiFiCredentials(String ssid, String password) {
+bool saveWiFiCredentials(String ssid, String password) {
   // Check if it exists and update, otherwise add
   bool found = false;
   for (int i = 0; i < knownNetworks.size(); i++) {
@@ -80,22 +78,23 @@ void saveWiFiCredentials(String ssid, String password) {
       knownNetworks[i].password = password;
       preferences.putString(("pass" + String(i)).c_str(), password);
       found = true;
-      break;
+      return true;
     }
   }
   
   if (!found) {
-    addWiFiNetwork(ssid, password);
+    return addWiFiNetwork(ssid, password);
   }
+  return false;
 }
 
 bool connectToWiFi(String ssid, String password) {
   Serial.println("\nConnecting to: " + ssid);
-  
+
   // Clean up previous connection attempts
   WiFi.disconnect(true);
   delay(100);
-  
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
 

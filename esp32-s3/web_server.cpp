@@ -323,11 +323,14 @@ void handleSetWiFi() {
     String ssid = SERVER_ARG("ssid");
     String password = SERVER_ARG("password");
 
-    saveWiFiCredentials(ssid, password);
-    displayAction("WiFi saved: " + ssid);
-
-    String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved.\"}";
-    SERVER_SEND(200, "application/json", json);
+    if (saveWiFiCredentials(ssid, password)) {
+      displayAction("WiFi saved: " + ssid);
+      String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved.\"}";
+      SERVER_SEND(200, "application/json", json);
+    } else {
+      String json = "{\"status\":\"error\",\"message\":\"Maximum number of WiFi networks reached (" + String(MAX_WIFI_NETWORKS) + ")\"}";
+      SERVER_SEND(400, "application/json", json);
+    }
   } else {
     SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
   }

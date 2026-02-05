@@ -256,8 +256,12 @@
       })
       .then(response => response.json())
       .then(data => {
-        showStatus('WiFi network saved!', 'success');
-        loadWiFiInfo();
+        if (data.status === 'ok') {
+          showStatus(data.message || 'WiFi network saved!', 'success');
+          loadWiFiInfo();
+        } else {
+          showStatus(data.message || 'Error saving credentials', 'error');
+        }
       })
       .catch(error => {
         showStatus('Error saving credentials', 'error');
