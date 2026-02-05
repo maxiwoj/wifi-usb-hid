@@ -143,6 +143,7 @@ void setupWebServer() {
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_GET, handleGetWiFi);
   server.on("/api/wifi", HTTP_POST, handleSetWiFi);
+  server.on("/api/wifi/delete", HTTP_POST, handleDeleteWiFi);
   server.on("/api/scan", HTTP_GET, handleScan);
   server.on("/api/scripts", HTTP_GET, handleListScripts);
   server.on("/api/scripts", HTTP_POST, handleSaveScript);
@@ -187,6 +188,7 @@ void setupWebServer() {
   secureServer.on("/api/status", HTTP_GET, handleStatus);
   secureServer.on("/api/wifi", HTTP_GET, handleGetWiFi);
   secureServer.on("/api/wifi", HTTP_POST, handleSetWiFi);
+  secureServer.on("/api/wifi/delete", HTTP_POST, handleDeleteWiFi);
   secureServer.on("/api/scan", HTTP_GET, handleScan);
   secureServer.on("/api/scripts", HTTP_GET, handleListScripts);
   secureServer.on("/api/scripts", HTTP_POST, handleSaveScript);
@@ -235,6 +237,13 @@ void handleCommand() {
   if (!checkAuthentication()) return;
   if (SERVER_HAS_ARG("cmd")) {
     String cmd = SERVER_ARG("cmd");
+    if (cmd == "RESTART") {
+      Serial.println("Restarting NodeMCU...");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Restarting...\"}");
+      delay(500);
+      ESP.restart();
+      return;
+    }
     sendCommandToProMicro(cmd);
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
@@ -294,7 +303,16 @@ void handleGetWiFi() {
   if (!checkAuthentication()) return;
   String json = "{";
   json += "\"ssid\":\"" + currentSSID + "\",";
-  json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\"";
+  json += "\"mode\":\"" + String(isAPMode ? "AP" : "Station") + "\",";
+  json += "\"networks\":[";
+  for (int i = 0; i < knownNetworks.size(); i++) {
+    if (i > 0) json += ",";
+    json += "{";
+    json += "\"ssid\":\"" + escapeJson(knownNetworks[i].ssid) + "\"";
+    json += "}";
+  }
+  json += "],";
+  json += "\"max_networks\":" + String(MAX_WIFI_NETWORKS);
   json += "}";
   SERVER_SEND(200, "application/json", json);
 }
@@ -305,16 +323,40 @@ void handleSetWiFi() {
     String ssid = SERVER_ARG("ssid");
     String password = SERVER_ARG("password");
 
-    saveWiFiCredentials(ssid, password);
-    displayAction("WiFi saved");
-
-    String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved. Restarting...\"}";
-    SERVER_SEND(200, "application/json", json);
-
-    delay(1000);
-    ESP.restart();
+    if (addWiFiNetwork(ssid, password)) {
+      displayAction("WiFi saved: " + ssid);
+      String json = "{\"status\":\"ok\",\"message\":\"WiFi credentials saved.\"}";
+      SERVER_SEND(200, "application/json", json);
+    } else {
+      String json = "{\"status\":\"error\",\"message\":\"Maximum number of WiFi networks reached (" + String(MAX_WIFI_NETWORKS) + ")\"}";
+      SERVER_SEND(400, "application/json", json);
+    }
   } else {
     SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing parameters\"}");
+  }
+}
+
+void handleDeleteWiFi() {
+  if (!checkAuthentication()) return;
+  if (SERVER_HAS_ARG("ssid")) {
+    String ssid = SERVER_ARG("ssid");
+    int index = -1;
+    for (int i = 0; i < knownNetworks.size(); i++) {
+      if (knownNetworks[i].ssid == ssid) {
+        index = i;
+        break;
+      }
+    }
+
+    if (index != -1) {
+      deleteWiFiNetwork(index);
+      displayAction("WiFi deleted: " + ssid);
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"WiFi network deleted\"}");
+    } else {
+      SERVER_SEND(404, "application/json", "{\"status\":\"error\",\"message\":\"WiFi network not found\"}");
+    }
+  } else {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing ssid parameter\"}");
   }
 }
 

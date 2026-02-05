@@ -7,7 +7,7 @@ String escapeJson(String str) {
     if (c == '\\') {
       result += "\\\\";
     } else if (c == '"') {
-      result += "\\\"";;
+      result += "\\\"";
     } else if (c == '\n') {
       result += "\\n";
     } else if (c == '\r') {
