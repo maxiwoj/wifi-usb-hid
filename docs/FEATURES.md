@@ -90,7 +90,8 @@ Extend beyond Windows, macOS, and Linux by creating custom OS categories with th
 ### WiFi Management
 ![WiFi Configuration](resource/wifiConfiguration.png)
 
-Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to your home/office network. Auto-reconnects on startup with automatic fallback to AP mode if connection fails.
+Built-in WiFi manager with network scanner. Device starts in AP mode (SSID: "USB-HID-Setup") and can be configured to connect to 
+your home/office network. The device can store multiple saved networks and always tries to connect on startup with automatic fallback to AP mode if connection fails.
 
 ### File Management
 ![File Management Interface](resource/fileManagement.png)
