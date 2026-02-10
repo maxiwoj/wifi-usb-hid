@@ -389,6 +389,8 @@ Commands sent via `/api/command` endpoint or DuckyScript.
 
 - **Type:** `TYPE:text` - Type without Enter
 - **Type + Enter:** `TYPELN:text`
+- **Type with delay:** `TYPE_DELAY:ms:text` (example: `TYPE_DELAY:20:Hello`)
+- **Type + Enter with delay:** `TYPELN_DELAY:ms:text`
 - **Special Keys:** `ENTER`, `ESC`, `TAB`, `BACKSPACE`, `DELETE`
 - **Arrow Keys:** `UP`, `DOWN`, `LEFT`, `RIGHT`
 - **Function Keys:** `F1` through `F12`

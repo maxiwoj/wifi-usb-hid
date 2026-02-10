@@ -245,6 +245,25 @@ void handleCommand() {
       return;
     }
     sendCommandToProMicro(cmd);
+
+    if (cmd.startsWith("TYPE_DELAY:")) {
+      int separatorPos = cmd.indexOf(':', 11);
+      if (separatorPos > 11) {
+        displayAction("Type: " + cmd.substring(separatorPos + 1));
+      }
+    }
+    else if (cmd.startsWith("TYPELN_DELAY:")) {
+      int separatorPos = cmd.indexOf(':', 13);
+      if (separatorPos > 13) {
+        displayAction("TypeLn: " + cmd.substring(separatorPos + 1));
+      }
+    }
+    else if (cmd.startsWith("TYPE:")) {
+      displayAction("Type: " + cmd.substring(5));
+    }
+    else if (cmd.startsWith("TYPELN:")) {
+      displayAction("TypeLn: " + cmd.substring(7));
+    }
     SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Command sent\"}");
   } else {
     SERVER_SEND(400, "application/json", "{status:error,message:Missing cmd parameter}");
