@@ -45,9 +45,16 @@ Send a command to Pro Micro. Parameter: `cmd` (required)
 
 ```bash
 curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=TYPE:Hello"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=TYPE_DELAY:20:Hello"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=TYPELN_DELAY:20:Hello"
 curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=ENTER"
 curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=GUI_R"
 ```
+
+**Typing delay commands:**
+- `TYPE_DELAY:<ms>:<text>` - Types text with a delay (in milliseconds) between each keystroke
+- `TYPELN_DELAY:<ms>:<text>` - Same as above, then sends Enter
+- Use `TYPE:` / `TYPELN:` for immediate typing with no delay
 
 Response: `{"status": "ok", "message": "Command sent"}`
 

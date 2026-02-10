@@ -72,16 +72,28 @@ let jigglerEnabled = false;
 
     function typeText() {
       const text = document.getElementById('typeText').value;
+      const delayInput = document.getElementById('typeTextDelay');
+      const keyDelay = delayInput ? parseInt(delayInput.value, 10) : 0;
       if (text) {
-        sendCommand('TYPE:' + text);
+        if (!isNaN(keyDelay) && keyDelay > 0) {
+          sendCommand('TYPE_DELAY:' + keyDelay + ':' + text);
+        } else {
+          sendCommand('TYPE:' + text);
+        }
         document.getElementById('typeText').value = '';
       }
     }
 
     function typeTextEnter() {
       const text = document.getElementById('typeText').value;
+      const delayInput = document.getElementById('typeTextDelay');
+      const keyDelay = delayInput ? parseInt(delayInput.value, 10) : 0;
       if (text) {
-        sendCommand('TYPELN:' + text);
+        if (!isNaN(keyDelay) && keyDelay > 0) {
+          sendCommand('TYPELN_DELAY:' + keyDelay + ':' + text);
+        } else {
+          sendCommand('TYPELN:' + text);
+        }
         document.getElementById('typeText').value = '';
       }
     }

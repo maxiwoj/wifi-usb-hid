@@ -79,8 +79,14 @@
     </div>
 
     <div class="card">
-      <h2>Type Text</h2>
-      <input type="text" id="typeText" placeholder="Enter text to type...">
+      <div class="card-header-controls" style="align-items: center; gap: 12px;">
+        <h2 style="margin: 0;">Type Text</h2>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="typeTextDelay" style="margin: 0; color: #667eea; font-weight: 500; font-size: 14px; white-space: nowrap;">Key delay (ms):</label>
+          <input type="number" id="typeTextDelay" min="0" max="1000" value="0" style="width: 90px; padding: 8px; border-radius: 4px; border: 1px solid #d1d5db; font-size: 14px; height: 38px; box-sizing: border-box;">
+        </div>
+      </div>
+      <input type="text" id="typeText" placeholder="Enter text to type..." style="margin-top: 10px;">
       <button class="btn btn-primary" onclick="typeText()">Type</button>
       <button class="btn btn-success" onclick="typeTextEnter()">Type + Enter</button>
       <button class="btn btn-warning" onclick="sendCommand('BACKSPACE')">Backspace</button>
