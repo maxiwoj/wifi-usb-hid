@@ -28,6 +28,22 @@ String jiggleType = "simple"; // simple, circles, random
 // Command buffer
 String commandBuffer = "";
 
+void typeTextWithDelay(const String& text, unsigned long keyDelayMs, bool sendEnter) {
+  for (size_t i = 0; i < text.length(); i++) {
+    Keyboard.write(text.charAt(i));
+    if (keyDelayMs > 0 && i < text.length() - 1) {
+      delay(keyDelayMs);
+    }
+  }
+
+  if (sendEnter) {
+    if (keyDelayMs > 0 && text.length() > 0) {
+      delay(keyDelayMs);
+    }
+    Keyboard.write(KEY_RETURN);
+  }
+}
+
 void setup() {
   // Initialize Serial1 for communication with NodeMCU (TX=1, RX=0)
   Serial1.begin(74880);
@@ -145,6 +161,24 @@ void processCommand(String cmd) {
   }
 
   // Type commands
+  else if (cmd.startsWith("TYPE_DELAY:")) {
+    int separatorPos = cmd.indexOf(':', 11);
+    if (separatorPos > 11) {
+      unsigned long keyDelay = cmd.substring(11, separatorPos).toInt();
+      String text = cmd.substring(separatorPos + 1);
+      typeTextWithDelay(text, keyDelay, false);
+      Serial1.println("OK:Typed text with delay");
+    }
+  }
+  else if (cmd.startsWith("TYPELN_DELAY:")) {
+    int separatorPos = cmd.indexOf(':', 13);
+    if (separatorPos > 13) {
+      unsigned long keyDelay = cmd.substring(13, separatorPos).toInt();
+      String text = cmd.substring(separatorPos + 1);
+      typeTextWithDelay(text, keyDelay, true);
+      Serial1.println("OK:Typed text with enter and delay");
+    }
+  }
   else if (cmd.startsWith("TYPE:")) {
     String text = cmd.substring(5);
     Keyboard.print(text);
