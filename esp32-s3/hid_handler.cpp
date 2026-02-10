@@ -35,6 +35,22 @@ static int jiggleDirection = 1;
 static int jiggleDiameter = 2; // configurable diameter
 static String jiggleType = "simple"; // simple, circles, random
 
+void typeTextWithDelay(const String& text, unsigned long keyDelayMs, bool sendEnter) {
+  for (size_t i = 0; i < text.length(); i++) {
+    Keyboard.write(text.charAt(i));
+    if (keyDelayMs > 0 && i < text.length() - 1) {
+      delay(keyDelayMs);
+    }
+  }
+
+  if (sendEnter) {
+    if (keyDelayMs > 0 && text.length() > 0) {
+      delay(keyDelayMs);
+    }
+    Keyboard.write(KEY_RETURN);
+  }
+}
+
 void setupHID() {
   Serial.println("Initializing USB HID...");
 
@@ -213,6 +229,24 @@ void processHIDCommand(String cmd) {
   }
 
   // Type commands
+  else if (cmd.startsWith("TYPE_DELAY:")) {
+    int separatorPos = cmd.indexOf(':', 11);
+    if (separatorPos > 11) {
+      unsigned long keyDelay = cmd.substring(11, separatorPos).toInt();
+      String text = cmd.substring(separatorPos + 1);
+      typeTextWithDelay(text, keyDelay, false);
+      Serial.println("Typed text with delay: " + String(keyDelay) + "ms");
+    }
+  }
+  else if (cmd.startsWith("TYPELN_DELAY:")) {
+    int separatorPos = cmd.indexOf(':', 13);
+    if (separatorPos > 13) {
+      unsigned long keyDelay = cmd.substring(13, separatorPos).toInt();
+      String text = cmd.substring(separatorPos + 1);
+      typeTextWithDelay(text, keyDelay, true);
+      Serial.println("Typed text with enter and delay: " + String(keyDelay) + "ms");
+    }
+  }
   else if (cmd.startsWith("TYPE:")) {
     String text = cmd.substring(5);
     Keyboard.print(text);
