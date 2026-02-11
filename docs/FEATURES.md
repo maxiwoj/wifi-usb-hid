@@ -5,11 +5,6 @@
 
 Type text remotely and send keyboard shortcuts to the target computer.
 
-**Features:**
-- Type text immediately with current behavior (0 ms delay)
-- Set a per-keystroke delay (for example, 20 ms) from the main Type Text card
-- Works for both **Type** and **Type + Enter** actions
-
 ### Mouse Control with Live Trackpad
 ![Mouse Control](resource/mouseControl.png)
 
