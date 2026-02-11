@@ -57,6 +57,14 @@ venv/
 node_modules/
 npm-debug.log
 yarn-error.log
+package-lock.json
+
+# Test build artifacts
+tests/*.o
+tests/unit/*.o
+tests/run_tests
+tests/debug_test
+tests/ui/coverage/
 
 # Claude
 .claude
