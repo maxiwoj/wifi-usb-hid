@@ -5,6 +5,8 @@
 This is an all-in-one implementation of the WiFi USB HID Control project for **ESP32-S3 boards** with a built-in 
 **0.96" ST7735 IPS LCD display**. This single board combines all features that previously required two separate boards (Pro Micro + NodeMCU).
 
+It supports keyboard and mouse HID controls, plus an **experimental gamepad test action** (`GAMEPAD_TEST:A/B/X/Y`) for quickly validating Xbox/gamepad macro feasibility.
+
 ## Hardware Specifications
 
 ![Lilygo T-Dongle-S3](../docs/resource/lilygo-t-dongle.jpeg)

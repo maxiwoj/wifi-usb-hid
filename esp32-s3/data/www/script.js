@@ -98,6 +98,17 @@ let jigglerEnabled = false;
       }
     }
 
+    function testGamepadButton(button) {
+      const normalizedButton = (button || '').toUpperCase();
+      if (!['A', 'B', 'X', 'Y'].includes(normalizedButton)) {
+        log('Invalid gamepad button: ' + button);
+        return;
+      }
+
+      sendCommand('GAMEPAD_TEST:' + normalizedButton);
+      log('Gamepad test button sent: ' + normalizedButton);
+    }
+
     function runQuickScript(scriptId, script) {
       executeScriptText(script);
       log('Running quick script: ' + scriptId);

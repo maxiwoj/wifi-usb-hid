@@ -101,6 +101,21 @@ Response: `{"status": "ok", "enabled": true/false}`
 
 ---
 
+### Gamepad test command (ESP32-S3 experimental)
+
+Use `POST /api/command` with `cmd=GAMEPAD_TEST:<button>` to send a short gamepad button tap.
+
+**Supported buttons:** `A`, `B`, `X`, `Y`
+
+```bash
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=GAMEPAD_TEST:A"
+curl -u admin:WiFi_HID!826 -X POST http://192.168.1.100/api/command -d "cmd=GAMEPAD_TEST:B"
+```
+
+This is intended as a quick capability check for Xbox/gamepad macro experiments. If the board package does not provide gamepad HID support, the device logs an error over Serial.
+
+---
+
 ### GET /api/status
 
 Get device status (WiFi mode, SSID, IP)

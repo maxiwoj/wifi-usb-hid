@@ -15,9 +15,19 @@
 #include "USBHIDKeyboard.h"
 #include "USBHIDMouse.h"
 
+#if __has_include("USBHIDGamepad.h")
+#include "USBHIDGamepad.h"
+#define GAMEPAD_SUPPORTED 1
+#else
+#define GAMEPAD_SUPPORTED 0
+#endif
+
 // Create HID devices
 USBHIDKeyboard Keyboard;
 USBHIDMouse Mouse;
+#if GAMEPAD_SUPPORTED
+USBHIDGamepad Gamepad;
+#endif
 
 #define USB_HID_AVAILABLE 1
 
@@ -57,6 +67,9 @@ void setupHID() {
   // Initialize HID devices first
   Keyboard.begin();
   Mouse.begin();
+#if GAMEPAD_SUPPORTED
+  Gamepad.begin();
+#endif
 
   // Then start USB stack
   USB.begin();
@@ -74,6 +87,23 @@ void setupHID() {
   Serial.println("USB HID initialized successfully");
   Serial.println("If HID is not working, check Arduino IDE settings:");
   Serial.println("  Tools > USB Mode > USB-OTG (TinyUSB)");
+#if GAMEPAD_SUPPORTED
+  Serial.println("Gamepad HID support: enabled (experimental)");
+#else
+  Serial.println("Gamepad HID support: unavailable in this ESP32 core");
+#endif
+}
+
+void pressGamepadButton(uint8_t buttonMask, const String& buttonName) {
+#if GAMEPAD_SUPPORTED
+  Gamepad.pressButton(buttonMask);
+  delay(120);
+  Gamepad.releaseButton(buttonMask);
+  Serial.println("Gamepad test: " + buttonName);
+#else
+  (void) buttonMask;
+  Serial.println("ERROR: Gamepad HID not supported by this board package");
+#endif
 }
 
 void updateJiggler() {
@@ -533,7 +563,28 @@ void processHIDCommand(String cmd) {
     String status = "STATUS:";
     status += jigglerEnabled ? "Jiggler=ON" : "Jiggler=OFF";
     status += ",USB=ENABLED";
+    status += GAMEPAD_SUPPORTED ? ",Gamepad=ON" : ",Gamepad=OFF";
     Serial.println(status);
+  }
+  else if (cmd.startsWith("GAMEPAD_TEST:")) {
+    String button = cmd.substring(13);
+    button.toUpperCase();
+
+    if (button == "A") {
+      pressGamepadButton(GAMEPAD_BUTTON_A, "A");
+    }
+    else if (button == "B") {
+      pressGamepadButton(GAMEPAD_BUTTON_B, "B");
+    }
+    else if (button == "X") {
+      pressGamepadButton(GAMEPAD_BUTTON_X, "X");
+    }
+    else if (button == "Y") {
+      pressGamepadButton(GAMEPAD_BUTTON_Y, "Y");
+    }
+    else {
+      Serial.println("ERROR: Unknown gamepad test button. Use A/B/X/Y");
+    }
   }
   else if (cmd == "LED_ON") {
     digitalWrite(LED_PIN, HIGH);
