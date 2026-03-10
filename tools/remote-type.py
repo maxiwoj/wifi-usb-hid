@@ -173,13 +173,19 @@ def main():
     ip = args.ip
     if not ip:
         try:
-            ip = input("Device IP address: ").strip()
+            ip = input("Device IP address (or last two octets, e.g. 4.1): ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
             sys.exit(0)
         if not ip:
             print("Error: IP address is required.", file=sys.stderr)
             sys.exit(1)
+
+    # Shorthand: "4.1" → "192.168.4.1"
+    parts = ip.split(".")
+    if len(parts) == 2:
+        ip = f"192.168.{ip}"
+        print(f"Expanded IP to {ip}")
 
     scheme = "https" if args.https else "http"
     base_url = f"{scheme}://{ip}"
