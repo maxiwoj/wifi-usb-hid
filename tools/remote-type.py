@@ -93,6 +93,7 @@ def keystroke_mode(base_url, headers, ssl_ctx):
         "\r": "ENTER",
         "\n": "ENTER",
         "\t": "TAB",
+        " ": "SPACE",
         "\x7f": "BACKSPACE",
         "\x1b": "ESC",
     }
