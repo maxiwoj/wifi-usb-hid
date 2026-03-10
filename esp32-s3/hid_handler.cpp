@@ -8,6 +8,7 @@
  */
 
 #include "hid_handler.h"
+#include "display_manager.h"
 #include <Arduino.h>
 
 // ESP32-S3 has native USB HID support
@@ -89,9 +90,25 @@ void setupHID() {
   Serial.println("  Tools > USB Mode > USB-OTG (TinyUSB)");
 #if GAMEPAD_SUPPORTED
   Serial.println("Gamepad HID support: enabled (experimental)");
+  displayAction("Gamepad: enabled");
 #else
   Serial.println("Gamepad HID support: unavailable in this ESP32 core");
+  displayAction("Gamepad: N/A");
 #endif
+}
+
+bool isGamepadSupported() {
+#if GAMEPAD_SUPPORTED
+  return true;
+#else
+  return false;
+#endif
+}
+
+void writeRawKeycode(uint8_t hidKeycode) {
+  Keyboard.pressRaw(hidKeycode);
+  delay(100);
+  Keyboard.releaseRaw(hidKeycode);
 }
 
 void pressGamepadButton(uint8_t buttonMask, const String& buttonName) {
@@ -308,6 +325,49 @@ void processHIDCommand(String cmd) {
   else if (cmd == "DELETE") {
     Keyboard.write(KEY_DELETE);
     Serial.println("Delete");
+  }
+
+  // Application/Menu keys (raw HID keycodes for Xbox chat experimentation)
+  else if (cmd == "MENU") {
+    writeRawKeycode(0x76);  // HID_KEY_MENU
+    Serial.println("Menu key (HID 0x76)");
+  }
+  else if (cmd == "APPLICATION" || cmd == "CONTEXT_MENU") {
+    writeRawKeycode(0x65);  // HID_KEY_APPLICATION (context menu key)
+    Serial.println("Application/Context Menu key (HID 0x65)");
+  }
+  else if (cmd == "SELECT") {
+    writeRawKeycode(0x77);  // HID_KEY_SELECT
+    Serial.println("Select key (HID 0x77)");
+  }
+  else if (cmd == "EXECUTE") {
+    writeRawKeycode(0x74);  // HID_KEY_EXECUTE
+    Serial.println("Execute key (HID 0x74)");
+  }
+  else if (cmd == "PRINTSCREEN") {
+    Keyboard.write(KEY_PRINT_SCREEN);
+    Serial.println("Print Screen");
+  }
+  else if (cmd == "SCROLLLOCK") {
+    Keyboard.write(KEY_SCROLL_LOCK);
+    Serial.println("Scroll Lock");
+  }
+  else if (cmd == "PAUSE") {
+    Keyboard.write(KEY_PAUSE);
+    Serial.println("Pause");
+  }
+
+  // Raw HID keycode - send any key by hex value (e.g. RAW_KEY:0x65)
+  else if (cmd.startsWith("RAW_KEY:")) {
+    String hexStr = cmd.substring(8);
+    hexStr.trim();
+    uint8_t keycode = (uint8_t)strtol(hexStr.c_str(), NULL, 16);
+    if (keycode > 0) {
+      writeRawKeycode(keycode);
+      Serial.println("Raw HID key: 0x" + String(keycode, HEX));
+    } else {
+      Serial.println("ERROR: Invalid raw keycode");
+    }
   }
 
   // GUI (Windows/Command) combinations

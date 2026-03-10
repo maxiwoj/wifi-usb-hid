@@ -15,6 +15,9 @@ void enableJiggler(String type, int diameter, unsigned long interval);
 void disableJiggler();
 bool isJigglerEnabled();
 
+// Gamepad support
+bool isGamepadSupported();
+
 // LED indicator
 void blinkLED(int times, int delayMs);
 

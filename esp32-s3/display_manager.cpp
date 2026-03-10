@@ -3,6 +3,7 @@
 #include <TFT_eSPI.h>
 #include "config.h"
 #include "littlefs_manager.h"
+#include "hid_handler.h"
 
 // TFT_eSPI display instance
 TFT_eSPI display = TFT_eSPI();
@@ -244,6 +245,19 @@ void updateDisplayStatus() {
     pass = pass.substring(0, maxChars - 6) + "...";
   }
   display.println(pass);
+  y += lineHeight;
+
+  // Line 6: Gamepad status
+  display.setCursor(2, y);
+  display.setTextColor(COLOR_CYAN);
+  display.print("Gamepad: ");
+  if (isGamepadSupported()) {
+    display.setTextColor(COLOR_GREEN);
+    display.println("ON");
+  } else {
+    display.setTextColor(COLOR_RED);
+    display.println("N/A");
+  }
   y += lineHeight + 4;
 
   // Last action (if any)
