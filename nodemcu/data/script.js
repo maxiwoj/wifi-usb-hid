@@ -95,11 +95,11 @@ let jigglerEnabled = false;
       const os = document.getElementById('osSelect').value;
       const quickScriptsDiv = document.getElementById('quickScripts');
 
-      if (!quickScriptsDiv) return; // Not on main page
+      if (!quickScriptsDiv) return Promise.resolve(); // Not on main page
 
       quickScriptsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+      return fetch('/api/quickscripts?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(scripts => {
           quickScriptsDiv.innerHTML = '';
@@ -149,7 +149,7 @@ let jigglerEnabled = false;
       quickActionsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
       // Load all actions for this OS from storage
-      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+      return fetch('/api/quickactions?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(actions => {
           quickActionsDiv.innerHTML = '';
@@ -213,7 +213,7 @@ let jigglerEnabled = false;
       const listDiv = document.getElementById('savedScriptsList');
       listDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/scripts')
+      return fetch('/api/scripts')
         .then(response => response.json())
         .then(scripts => {
           if (scripts.length === 0) {
@@ -303,9 +303,40 @@ let jigglerEnabled = false;
       });
     }
 
+    function reloadDashboardData(button) {
+      const reloadButton = button || document.getElementById('reloadDashboardBtn');
+      const originalLabel = reloadButton ? reloadButton.textContent : '';
+
+      if (reloadButton) {
+        reloadButton.disabled = true;
+        reloadButton.textContent = 'Reloading...';
+      }
+
+      const tasks = [];
+      if (document.getElementById('deviceIP')) tasks.push(Promise.resolve().then(loadDeviceStatus));
+      if (document.getElementById('quickActions')) tasks.push(Promise.resolve().then(updateQuickActions));
+      if (document.getElementById('quickScripts')) tasks.push(Promise.resolve().then(loadQuickScripts));
+      if (document.getElementById('savedScriptsList')) tasks.push(Promise.resolve().then(loadSavedScripts));
+
+      Promise.allSettled(tasks).then(results => {
+        const failed = results.filter(result => result.status === 'rejected');
+
+        if (failed.length > 0) {
+          log('Dashboard reload completed with ' + failed.length + ' error' + (failed.length === 1 ? '' : 's'));
+        } else {
+          log('Dashboard data reloaded');
+        }
+      }).finally(() => {
+        if (reloadButton) {
+          reloadButton.disabled = false;
+          reloadButton.textContent = originalLabel || 'Reload Data';
+        }
+      });
+    }
+
     // Load and display device status
     function loadDeviceStatus() {
-      fetch('/api/status')
+      return fetch('/api/status')
         .then(response => response.json())
         .then(data => {
           document.getElementById('deviceIP').textContent = data.ip || 'Unknown';
