@@ -9,11 +9,25 @@ Supports line-by-line mode (default) and raw keystroke mode (-k).
 import argparse
 import base64
 import json
+import socket
 import sys
 import urllib.request
 import urllib.error
 import urllib.parse
 import ssl
+
+
+def get_local_ip():
+    """Returns the local IP address of the primary interface."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # 8.8.8.8 is Google's DNS, but we don't actually send any packets.
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return None
 
 
 def build_auth_header(user, password):
@@ -173,7 +187,7 @@ def main():
     ip = args.ip
     if not ip:
         try:
-            ip = input("Device IP address (or last two octets, e.g. 4.1): ").strip()
+            ip = input("Device IP address - full or the last X segments (e.g. 192.168.4.10, 4.10, or just 10): ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
             sys.exit(0)
@@ -181,11 +195,22 @@ def main():
             print("Error: IP address is required.", file=sys.stderr)
             sys.exit(1)
 
-    # Shorthand: "4.1" → "192.168.4.1"
+    # Shorthand expansion
     parts = ip.split(".")
-    if len(parts) == 2:
-        ip = f"192.168.{ip}"
-        print(f"Expanded IP to {ip}")
+    if len(parts) < 4:
+        local_ip = get_local_ip()
+        if local_ip:
+            local_parts = local_ip.split(".")
+            ip = ".".join(local_parts[:(4-len(parts))] + parts)
+            print(f"Expanded IP to {ip} (using local IP {local_ip})")
+        else:
+            # Fallback for len(parts) == 2 if local IP cannot be determined
+            if len(parts) == 2:
+                ip = f"192.168.{ip}"
+                print(f"Expanded IP to {ip} (default fallback)")
+            elif len(parts) == 1:
+                print(f"Error: Could not determine local IP to expand '{ip}'. Please provide the full IP.", file=sys.stderr)
+                sys.exit(1)
 
     scheme = "https" if args.https else "http"
     base_url = f"{scheme}://{ip}"
