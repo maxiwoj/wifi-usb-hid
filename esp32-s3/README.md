@@ -188,6 +188,7 @@ See full README for complete troubleshooting guide.
 2. Connect and go to `http://192.168.4.1`
 3. Login: `admin` / `WiFi_HID!826`
 4. Configure your WiFi or use directly
+5. Once connected to WiFi, the device also advertises itself via mDNS as `wifi-usb-hid.local` (if your OS/network supports mDNS resolution)
 
 ## Support
 

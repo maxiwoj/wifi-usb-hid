@@ -16,6 +16,7 @@ bool addWifiNetwork(String ssid, String password);
 bool connectToWiFi(String ssid, String password);
 bool connectToAnyWiFi();
 void startAPMode();
+bool setupMDNS();
 
 extern std::vector<WiFiNetwork> knownNetworks;
 extern String currentSSID;
