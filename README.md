@@ -33,6 +33,7 @@ A comprehensive list of features is available in the [FEATURES.md](docs/FEATURES
 -   Advanced Mouse Jiggler
 -   REST API
 -   Optional OLED Display
+-   mDNS support
 
 See **[FEATURES.md](docs/FEATURES.md)** for a detailed description of each feature.
 
@@ -86,7 +87,7 @@ See **[SETUP.md](docs/SETUP.md)** for detailed instructions and **[WIRING.md](do
 Follow the instructions in the **[esp32-s3/README.md](esp32-s3/README.md)**.
 
 ### Common Steps:
-1. **Access** - Connect to WiFi "USB-HID-Setup" (password: HID_M4ster), open http://192.168.4.1 or https://192.168.4.1
+1. **Access** - Connect to WiFi "USB-HID-Setup" (password: HID_M4ster), open http://wifi-hid.local (will resolve to `192.168.4.1`)
 2. **Login** - Enter web credentials (username: admin, password: WiFi_HID!826)
 3. **HTTPS Note** - For HTTPS, accept the browser security warning for the self-signed certificate
 
