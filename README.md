@@ -1,6 +1,8 @@
 # WiFi USB HID Control
 
-![Logo](docs/resource/logo.bmp)
+<p align="center">
+  <img src="docs/resource/logo.bmp" alt="Logo">
+</p>
 
 Remote control your computer's keyboard and mouse over WiFi - a dual-microcontroller USB HID automation tool.
 
