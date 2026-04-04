@@ -15,6 +15,8 @@ void deleteWiFiNetwork(int index);
 bool connectToWiFi(String ssid, String password);
 bool connectToAnyWiFi();
 void startAPMode();
+bool setupMDNS();
+void updateMDNS();
 
 extern std::vector<WiFiNetwork> knownNetworks;
 extern String currentSSID;

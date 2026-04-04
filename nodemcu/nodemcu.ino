@@ -50,4 +50,5 @@ void setup() {
 
 void loop() {
   handleWebClients();
+  updateMDNS();
 }
