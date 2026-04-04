@@ -1,5 +1,6 @@
 #include "wifi_manager.h"
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include <Preferences.h>
 #include "config.h"
 #include <vector>
@@ -9,6 +10,28 @@ std::vector<WiFiNetwork> knownNetworks;
 String currentSSID = "";
 String currentPassword = "";
 bool isAPMode = false;
+static bool mdnsStarted = false;
+
+bool setupMDNS() {
+  if (mdnsStarted) {
+    MDNS.end();
+    mdnsStarted = false;
+  }
+
+  if (!MDNS.begin(MDNS_HOSTNAME)) {
+    Serial.println("Failed to start mDNS responder");
+    return false;
+  }
+
+  MDNS.addService("http", "tcp", 80);
+#if ENABLE_HTTPS
+  MDNS.addService("https", "tcp", 443);
+#endif
+
+  mdnsStarted = true;
+  Serial.println("mDNS responder started: http://" + String(MDNS_HOSTNAME) + ".local");
+  return true;
+}
 
 void setupPreferences() {
   preferences.begin(PREFS_NAMESPACE, false);
@@ -97,6 +120,7 @@ bool connectToWiFi(String ssid, String password) {
   isAPMode = false;
   currentSSID = ssid;
   currentPassword = password;
+  setupMDNS();
   return true;
 }
 
@@ -145,6 +169,7 @@ void startAPMode() {
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP());
     isAPMode = true;
+    setupMDNS();
   } else {
     Serial.println("Failed to start AP Mode!");
     isAPMode = false;

@@ -1,5 +1,6 @@
 #include "wifi_manager.h"
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include "config.h"
 #include "eeprom_helpers.h"
@@ -9,17 +10,45 @@ std::vector<WiFiNetwork> knownNetworks;
 String currentSSID = "";
 String currentPassword = "";
 bool isAPMode = false;
+static bool mdnsStarted = false;
+
+bool setupMDNS() {
+  if (mdnsStarted) {
+    MDNS.close();
+    mdnsStarted = false;
+  }
+
+  if (!MDNS.begin(MDNS_HOSTNAME)) {
+    Serial.println("Failed to start mDNS responder");
+    return false;
+  }
+
+  MDNS.addService("http", "tcp", 80);
+#if ENABLE_HTTPS
+  MDNS.addService("https", "tcp", 443);
+#endif
+
+  mdnsStarted = true;
+  Serial.println("mDNS responder started: http://" + String(MDNS_HOSTNAME) + ".local");
+  return true;
+}
+
+void updateMDNS() {
+  if (mdnsStarted) {
+    MDNS.update();
+  }
+}
 
 void loadWiFiNetworks() {
   knownNetworks.clear();
   EEPROM.begin(EEPROM_SIZE);
-  
+
   uint8_t magic = EEPROM.read(WIFI_MAGIC_ADDR);
-  
+
   if (magic == WIFI_MAGIC_VAL) {
     uint8_t count = EEPROM.read(WIFI_COUNT_ADDR);
     if (count > MAX_WIFI_NETWORKS) count = MAX_WIFI_NETWORKS;
-    
+
     for (int i = 0; i < count; i++) {
       int addr = i * WIFI_NET_SIZE;
       WiFiNetwork net;
@@ -46,7 +75,7 @@ bool addWiFiNetwork(String ssid, String password) {
   if (knownNetworks.size() < MAX_WIFI_NETWORKS) {
     WiFiNetwork net = {ssid, password};
     knownNetworks.push_back(net);
-    
+
     int index = knownNetworks.size() - 1;
     int addr = index * WIFI_NET_SIZE;
     writeStringToEEPROM(addr, ssid, 32);
@@ -62,7 +91,7 @@ bool addWiFiNetwork(String ssid, String password) {
 void deleteWiFiNetwork(int index) {
   if (index >= 0 && index < knownNetworks.size()) {
     knownNetworks.erase(knownNetworks.begin() + index);
-    
+
     // Rewrite all networks in EEPROM
     for (int i = 0; i < knownNetworks.size(); i++) {
       int addr = i * WIFI_NET_SIZE;
@@ -76,11 +105,11 @@ void deleteWiFiNetwork(int index) {
 
 bool connectToWiFi(String ssid, String password) {
   Serial.println("\nConnecting to: " + ssid);
-  
+
   // Clean up previous connection attempts
   WiFi.disconnect();
   delay(100);
-  
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
 
@@ -99,6 +128,7 @@ bool connectToWiFi(String ssid, String password) {
   isAPMode = false;
   currentSSID = ssid;
   currentPassword = password;
+  setupMDNS();
   return true;
 }
 
@@ -146,4 +176,5 @@ void startAPMode() {
   Serial.println("Password: " + String(AP_PASS));
   Serial.println("IP: 192.168.4.1");
   isAPMode = true;
+  setupMDNS();
 }
