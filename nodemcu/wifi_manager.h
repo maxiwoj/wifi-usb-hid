@@ -2,12 +2,21 @@
 #define WIFI_MANAGER_H
 
 #include <Arduino.h>
+#include <vector>
 
-void loadWiFiCredentials();
-void saveWiFiCredentials(String ssid, String password);
+struct WiFiNetwork {
+  String ssid;
+  String password;
+};
+
+void loadWiFiNetworks();
+bool addWiFiNetwork(String ssid, String password);
+void deleteWiFiNetwork(int index);
 bool connectToWiFi(String ssid, String password);
+bool connectToAnyWiFi();
 void startAPMode();
 
+extern std::vector<WiFiNetwork> knownNetworks;
 extern String currentSSID;
 extern String currentPassword;
 extern bool isAPMode;

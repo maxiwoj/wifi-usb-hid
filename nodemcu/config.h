@@ -3,8 +3,11 @@
 
 // EEPROM addresses (for WiFi credentials only)
 #define EEPROM_SIZE 512
-#define SSID_ADDR 0
-#define PASS_ADDR 100
+#define WIFI_COUNT_ADDR 510
+#define WIFI_MAGIC_ADDR 511
+#define WIFI_MAGIC_VAL 0x42
+#define MAX_WIFI_NETWORKS 5
+#define WIFI_NET_SIZE 96 // 32 for SSID + 64 for PASS
 
 // LittleFS settings for script storage
 #define MAX_SCRIPT_NAME_LEN 32

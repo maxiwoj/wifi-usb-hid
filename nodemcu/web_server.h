@@ -14,6 +14,7 @@ void handleJiggler();
 void handleStatus();
 void handleGetWiFi();
 void handleSetWiFi();
+void handleDeleteWiFi();
 void handleScan();
 void handleListScripts();
 void handleSaveScript();
