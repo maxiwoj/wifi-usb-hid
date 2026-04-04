@@ -16,6 +16,18 @@ import urllib.error
 import urllib.parse
 import ssl
 
+DEFAULT_MDNS_HOSTNAME = "wifi-hida.local"
+
+
+def resolve_mdns(hostname):
+    """Try to resolve an mDNS hostname to an IP address."""
+    try:
+        # gethostbyname will use the OS's mDNS resolver if available
+        # (macOS, Linux with nss-mdns, Windows with mDNS)
+        return socket.gethostbyname(hostname)
+    except socket.gaierror:
+        return None
+
 
 def get_local_ip():
     """Returns the local IP address of the primary interface."""
@@ -186,18 +198,24 @@ def main():
     # Prompt for IP if not provided
     ip = args.ip
     if not ip:
-        try:
-            ip = input("Device IP address - full or the last X segments (e.g. 192.168.4.10, 4.10, or just 10): ").strip()
-        except (KeyboardInterrupt, EOFError):
-            print("\nExiting.")
-            sys.exit(0)
-        if not ip:
-            print("Error: IP address is required.", file=sys.stderr)
-            sys.exit(1)
+        print(f"Scanning for device via mDNS ({DEFAULT_MDNS_HOSTNAME})...")
+        resolved = resolve_mdns(DEFAULT_MDNS_HOSTNAME)
+        if resolved:
+            ip = resolved
+            print(f"Found device at {DEFAULT_MDNS_HOSTNAME} ({ip})")
+        else:
+            try:
+                ip = input("Could not find device via mDNS. Enter IP address (e.g. 192.168.4.10, 4.10, or 10): ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
+                sys.exit(0)
+            if not ip:
+                print("Error: IP address or mDNS hostname is required.", file=sys.stderr)
+                sys.exit(1)
 
-    # Shorthand expansion
+    # Shorthand expansion - only if it looks like an IP segment (all parts are digits and not .local)
     parts = ip.split(".")
-    if len(parts) < 4:
+    if len(parts) < 4 and all(p.isdigit() for p in parts):
         local_ip = get_local_ip()
         if local_ip:
             local_parts = local_ip.split(".")

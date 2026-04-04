@@ -14,7 +14,7 @@
 #define AP_SSID "USB-HID-Setup"
 #define AP_PASS "HID_M4ster"
 // mDNS hostname (device reachable at http://<hostname>.local on supporting networks)
-#define MDNS_HOSTNAME "wifi-usb-hid"
+#define MDNS_HOSTNAME "wifi-hid"
 
 // Web Authentication settings
 #define WEB_AUTH_USER "admin"
