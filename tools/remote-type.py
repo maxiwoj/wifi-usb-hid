@@ -16,7 +16,7 @@ import urllib.error
 import urllib.parse
 import ssl
 
-DEFAULT_MDNS_HOSTNAME = "wifi-hida.local"
+DEFAULT_MDNS_HOSTNAME = "wifi-hid.local"
 
 
 def resolve_mdns(hostname):
@@ -40,6 +40,63 @@ def get_local_ip():
         return local_ip
     except Exception:
         return None
+
+def resolve_device_address(provided_ip):
+    """Resolve mDNS or expand shorthand IP address."""
+    ip = provided_ip
+    if not ip:
+        print(f"Scanning for device via mDNS ({DEFAULT_MDNS_HOSTNAME})...")
+        resolved = resolve_mdns(DEFAULT_MDNS_HOSTNAME)
+        if resolved:
+            ip = resolved
+            print(f"Found device at {DEFAULT_MDNS_HOSTNAME} ({ip})")
+        else:
+            try:
+                ip = input("Could not find device via mDNS. Enter IP address (e.g. 192.168.4.10, 4.10, or 10): ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
+                sys.exit(0)
+            if not ip:
+                print("Error: IP address or mDNS hostname is required.", file=sys.stderr)
+                sys.exit(1)
+
+    # Shorthand expansion
+    parts = ip.split(".")
+    if len(parts) < 4 and all(p.isdigit() for p in parts):
+        current_ip = get_local_ip()
+        local_ip = current_ip if current_ip else "192.168.1.1" # fallback
+        local_parts = local_ip.split(".")
+        ip = ".".join(local_parts[:(4-len(parts))] + parts)
+        if current_ip:
+            print(f"Expanded IP to {ip} (using local IP {local_ip})")
+        else:
+            print(f"Expanded IP to {ip} (default fallback)")
+    return ip
+
+
+def setup_connection(args):
+    """Initialize connection, headers, and SSL context. Verifies with PING."""
+    ip = resolve_device_address(args.ip)
+    scheme = "https" if args.https else "http"
+    base_url = f"{scheme}://{ip}"
+    headers = build_auth_header(args.user, args.password)
+
+    # SSL context for self-signed certs
+    ssl_ctx = None
+    if args.https:
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    # Verify connectivity with a quick test
+    print(f"Connecting to {base_url} ...")
+    ok, msg = send_command(base_url, headers, "PING", ssl_ctx)
+    if ok:
+        print(f"Connected.\n")
+    else:
+        print(f"Warning: initial ping failed ({msg}). Continuing anyway.\n", file=sys.stderr)
+
+    return base_url, headers, ssl_ctx
 
 
 def build_auth_header(user, password):
@@ -195,59 +252,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Prompt for IP if not provided
-    ip = args.ip
-    if not ip:
-        print(f"Scanning for device via mDNS ({DEFAULT_MDNS_HOSTNAME})...")
-        resolved = resolve_mdns(DEFAULT_MDNS_HOSTNAME)
-        if resolved:
-            ip = resolved
-            print(f"Found device at {DEFAULT_MDNS_HOSTNAME} ({ip})")
-        else:
-            try:
-                ip = input("Could not find device via mDNS. Enter IP address (e.g. 192.168.4.10, 4.10, or 10): ").strip()
-            except (KeyboardInterrupt, EOFError):
-                print("\nExiting.")
-                sys.exit(0)
-            if not ip:
-                print("Error: IP address or mDNS hostname is required.", file=sys.stderr)
-                sys.exit(1)
-
-    # Shorthand expansion - only if it looks like an IP segment (all parts are digits and not .local)
-    parts = ip.split(".")
-    if len(parts) < 4 and all(p.isdigit() for p in parts):
-        local_ip = get_local_ip()
-        if local_ip:
-            local_parts = local_ip.split(".")
-            ip = ".".join(local_parts[:(4-len(parts))] + parts)
-            print(f"Expanded IP to {ip} (using local IP {local_ip})")
-        else:
-            # Fallback for len(parts) == 2 if local IP cannot be determined
-            if len(parts) == 2:
-                ip = f"192.168.{ip}"
-                print(f"Expanded IP to {ip} (default fallback)")
-            elif len(parts) == 1:
-                print(f"Error: Could not determine local IP to expand '{ip}'. Please provide the full IP.", file=sys.stderr)
-                sys.exit(1)
-
-    scheme = "https" if args.https else "http"
-    base_url = f"{scheme}://{ip}"
-    headers = build_auth_header(args.user, args.password)
-
-    # SSL context for self-signed certs
-    ssl_ctx = None
-    if args.https:
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
-
-    # Verify connectivity with a quick test
-    print(f"Connecting to {base_url} ...")
-    ok, msg = send_command(base_url, headers, "PING", ssl_ctx)
-    if ok:
-        print(f"Connected.\n")
-    else:
-        print(f"Warning: initial ping failed ({msg}). Continuing anyway.\n", file=sys.stderr)
+    base_url, headers, ssl_ctx = setup_connection(args)
 
     if args.keystroke:
         keystroke_mode(base_url, headers, ssl_ctx)
