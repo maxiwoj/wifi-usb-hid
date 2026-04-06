@@ -113,4 +113,23 @@ void parseDuckyLine(String line) {
            line == "F9" || line == "F10" || line == "F11" || line == "F12") {
     processHIDCommand(line);
   }
+
+  // Application/Menu keys
+  else if (line == "MENU" || line == "APPLICATION" || line == "CONTEXT_MENU" ||
+           line == "SELECT" || line == "EXECUTE" || line == "PRINTSCREEN" ||
+           line == "SCROLLLOCK" || line == "PAUSE") {
+    processHIDCommand(line);
+  }
+
+  // Raw HID keycode: RAW_KEY 0x65
+  else if (line.startsWith("RAW_KEY ")) {
+    String hexVal = line.substring(8);
+    processHIDCommand("RAW_KEY:" + hexVal);
+  }
+
+  // Direct HID command passthrough: CMD <any_hid_command>
+  else if (line.startsWith("CMD ")) {
+    String cmd = line.substring(4);
+    processHIDCommand(cmd);
+  }
 }
