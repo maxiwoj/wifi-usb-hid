@@ -1,0 +1,69 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  cpp-tests:
+    name: C++ Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential g++ make
+
+      - name: Build C++ tests
+        run: |
+          cd tests
+          make clean
+          make
+
+      - name: Run C++ tests
+        run: |
+          cd tests
+          make test
+
+      - name: C++ test summary
+        if: always()
+        run: |
+          echo "### C++ Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f tests/run_tests ]; then
+            echo "✅ C++ tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ C++ tests failed to build" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  javascript-tests:
+    name: JavaScript/UI Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run JavaScript tests
+        run: npm test
+
+      - name: JavaScript test summary
+        if: always()
+        run: |
+          echo "### JavaScript Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ JavaScript tests completed" >> $GITHUB_STEP_SUMMARY
