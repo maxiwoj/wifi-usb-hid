@@ -7,6 +7,10 @@ void setupWebServer();
 void handleWebClients();
 bool checkAuthentication();
 
+// Auth Handlers
+void handleLogin();
+void handleLogout();
+
 // API Handlers
 void handleCommand();
 void handleScript();

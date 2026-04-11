@@ -61,6 +61,26 @@ bool httpsEnabled = false;
 #define SERVER_REQUEST_AUTH() server.requestAuthentication()
 #endif
 
+// Session token for Bearer-based auth (stored in RAM, cleared on reboot)
+static String sessionToken = "";
+static bool tokenActive = false;
+
+static String generateToken() {
+  String token = "";
+  randomSeed(micros() ^ ESP.getChipId());
+  for (int i = 0; i < 32; i++) {
+    token += String((uint8_t)random(16), HEX);
+  }
+  return token;
+}
+
+static String getAuthorizationHeader() {
+#if ENABLE_HTTPS
+  if (httpsEnabled && secureServer.client()) return secureServer.header("Authorization");
+#endif
+  return server.header("Authorization");
+}
+
 String getContentType(String filename) {
   if (filename.endsWith(".html")) return "text/html";
   else if (filename.endsWith(".css")) return "text/css";
@@ -111,10 +131,50 @@ void serveStaticFile(String path, String contentType) {
   }
 }
 
-// Try to serve the file directly
-void handleNotFound() {
+bool checkAuthentication() {
+  // Check Bearer token first (used by the web UI after login)
+  String authHeader = getAuthorizationHeader();
+  if (authHeader.startsWith("Bearer ")) {
+    String token = authHeader.substring(7);
+    if (tokenActive && token.length() > 0 && token == sessionToken) {
+      return true;
+    }
+    SERVER_SEND(401, "application/json", "{\"status\":\"error\",\"message\":\"Invalid or expired token\"}");
+    return false;
+  }
+
+  // Fall back to HTTP Basic Auth for backward compatibility with scripts/tools
+  if (!SERVER_AUTHENTICATE(WEB_AUTH_USER, WEB_AUTH_PASS)) {
+    SERVER_REQUEST_AUTH();
+    return false;
+  }
+  return true;
+}
+
+void handleLogin() {
+  if (SERVER_HAS_ARG("username") && SERVER_HAS_ARG("password")) {
+    if (SERVER_ARG("username") == WEB_AUTH_USER && SERVER_ARG("password") == WEB_AUTH_PASS) {
+      sessionToken = generateToken();
+      tokenActive = true;
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"token\":\"" + sessionToken + "\"}");
+    } else {
+      SERVER_SEND(401, "application/json", "{\"status\":\"error\",\"message\":\"Invalid credentials\"}");
+    }
+  } else {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing username or password\"}");
+  }
+}
+
+void handleLogout() {
   if (!checkAuthentication()) return;
-  
+  tokenActive = false;
+  sessionToken = "";
+  SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Logged out\"}");
+}
+
+// Static files are served without authentication.
+// The embedded auth.js handles login client-side; API endpoints enforce token auth.
+void handleNotFound() {
   String path = server.uri();
 #if ENABLE_HTTPS
   if (httpsEnabled && secureServer.client()) {
@@ -123,20 +183,18 @@ void handleNotFound() {
 #endif
 
   if (handleStaticFile(path)) return;
-  
+
   SERVER_SEND(404, "text/plain", "File not found: " + path);
 }
 
-bool checkAuthentication() {
-  if (!SERVER_AUTHENTICATE(WEB_AUTH_USER, WEB_AUTH_PASS)) {
-    SERVER_REQUEST_AUTH();
-    return false;
-  }
-  return true;
-}
-
 void setupWebServer() {
+  // Collect the Authorization header so checkAuthentication() can read Bearer tokens
+  const char* collectHeaders[] = {"Authorization"};
+  server.collectHeaders(collectHeaders, 1);
+
   // Register API routes on HTTP server
+  server.on("/api/login", HTTP_POST, handleLogin);
+  server.on("/api/logout", HTTP_POST, handleLogout);
   server.on("/api/command", HTTP_POST, handleCommand);
   server.on("/api/script", HTTP_POST, handleScript);
   server.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -181,7 +239,12 @@ void setupWebServer() {
 
   secureServer.getServer().setRSACert(&serverCert, &serverKey);
 
+  const char* secureCollectHeaders[] = {"Authorization"};
+  secureServer.collectHeaders(secureCollectHeaders, 1);
+
   // Register API routes on HTTPS server
+  secureServer.on("/api/login", HTTP_POST, handleLogin);
+  secureServer.on("/api/logout", HTTP_POST, handleLogout);
   secureServer.on("/api/command", HTTP_POST, handleCommand);
   secureServer.on("/api/script", HTTP_POST, handleScript);
   secureServer.on("/api/jiggler", HTTP_GET, handleJiggler);

@@ -68,12 +68,13 @@
     </div>
   </div>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
   <script>
     let currentPath = '/';
 
     function loadFilesystemStatus() {
-      fetch('/api/files?path=' + encodeURIComponent(currentPath))
+      apiFetch('/api/files?path=' + encodeURIComponent(currentPath))
         .then(response => response.json())
         .then(data => {
           const fsDiv = document.getElementById('fsStatus');
@@ -154,7 +155,7 @@
         }
         if (displayName === '') displayName = file.name;
 
-        const isCore = file.name === '/index.html' || file.name === '/style.css' || file.name === '/script.js';
+        const isCore = file.name === '/index.html' || file.name === '/style.css' || file.name === '/script.js' || file.name === '/auth.js';
         const sizeKB = (file.size / 1024).toFixed(2);
 
         html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
@@ -208,7 +209,7 @@
       const formData = new URLSearchParams();
       formData.append('path', fullPath);
 
-      fetch('/api/files/create_dir', {
+      apiFetch('/api/files/create_dir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
@@ -245,7 +246,7 @@
       const formData = new FormData();
       formData.append('file', file);
 
-      fetch('/api/files/upload?path=' + encodeURIComponent(currentPath), {
+      apiFetch('/api/files/upload?path=' + encodeURIComponent(currentPath), {
         method: 'POST',
         body: formData
       })
@@ -277,7 +278,7 @@
       const formData = new URLSearchParams();
       formData.append('name', filename);
 
-      fetch('/api/files/delete', {
+      apiFetch('/api/files/delete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

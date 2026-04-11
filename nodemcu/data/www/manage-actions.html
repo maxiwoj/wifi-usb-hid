@@ -74,6 +74,7 @@
     </div>
   </div>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
   <script>
     // Override loadQuickActionsManager to add reorder buttons
@@ -84,7 +85,7 @@
       const os = document.getElementById('osManagerSelect').value;
       managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+      apiFetch('/api/quickactions?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(actions => {
           if (actions.length === 0) {
@@ -160,7 +161,7 @@
       // Send reorder request
       const order = actions.map(a => a.cmd).join(',');
 
-      fetch('/api/quickactions/reorder', {
+      apiFetch('/api/quickactions/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'os=' + encodeURIComponent(os) + '&order=' + encodeURIComponent(order)
