@@ -15,7 +15,7 @@ let jigglerEnabled = false;
     }
 
     function sendCommand(cmd) {
-      fetch('/api/command', {
+      apiFetch('/api/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'cmd=' + encodeURIComponent(cmd)
@@ -44,7 +44,7 @@ let jigglerEnabled = false;
         const delay = document.getElementById('jigglerDelay').value;
 
         // Send enable command with all parameters
-        fetch('/api/jiggler?enable=1&type=' + encodeURIComponent(type) +
+        apiFetch('/api/jiggler?enable=1&type=' + encodeURIComponent(type) +
               '&diameter=' + encodeURIComponent(diameter) +
               '&delay=' + encodeURIComponent(delay))
           .then(response => response.json())
@@ -59,7 +59,7 @@ let jigglerEnabled = false;
         status.textContent = 'Disabled';
 
         // Send disable command
-        fetch('/api/jiggler?enable=0')
+        apiFetch('/api/jiggler?enable=0')
           .then(response => response.json())
           .then(data => {
             log('Mouse jiggler disabled');
@@ -111,7 +111,7 @@ let jigglerEnabled = false;
 
       quickScriptsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+      apiFetch('/api/quickscripts?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(scripts => {
           quickScriptsDiv.innerHTML = '';
@@ -141,7 +141,7 @@ let jigglerEnabled = false;
     }
 
     function executeScriptText(script) {
-      fetch('/api/script', {
+      apiFetch('/api/script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'script=' + encodeURIComponent(script)
@@ -161,7 +161,7 @@ let jigglerEnabled = false;
       quickActionsDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
       // Load all actions for this OS from storage
-      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+      apiFetch('/api/quickactions?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(actions => {
           quickActionsDiv.innerHTML = '';
@@ -201,7 +201,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/scripts', {
+      apiFetch('/api/scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'name=' + encodeURIComponent(name) + '&script=' + encodeURIComponent(script)
@@ -225,7 +225,7 @@ let jigglerEnabled = false;
       const listDiv = document.getElementById('savedScriptsList');
       listDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/scripts')
+      apiFetch('/api/scripts')
         .then(response => response.json())
         .then(scripts => {
           if (scripts.length === 0) {
@@ -271,7 +271,7 @@ let jigglerEnabled = false;
     }
 
     function loadScriptToEditor(name) {
-      fetch('/api/scripts/load', {
+      apiFetch('/api/scripts/load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'name=' + encodeURIComponent(name)
@@ -296,7 +296,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/scripts/delete', {
+      apiFetch('/api/scripts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'name=' + encodeURIComponent(name)
@@ -317,7 +317,7 @@ let jigglerEnabled = false;
 
     // Load and display device status
     function loadDeviceStatus() {
-      fetch('/api/status')
+      apiFetch('/api/status')
         .then(response => response.json())
         .then(data => {
           document.getElementById('deviceIP').textContent = data.ip || 'Unknown';
@@ -571,7 +571,7 @@ let jigglerEnabled = false;
 
     // Custom OS Management Functions
     function loadCustomOS() {
-      fetch('/api/customos')
+      apiFetch('/api/customos')
         .then(response => response.json())
         .then(customOSList => {
           const osSelect = document.getElementById('osSelect');
@@ -650,7 +650,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/customos', {
+      apiFetch('/api/customos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'name=' + encodeURIComponent(osName.trim())
@@ -675,7 +675,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/customos/delete', {
+      apiFetch('/api/customos/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'name=' + encodeURIComponent(osName)
@@ -714,7 +714,7 @@ let jigglerEnabled = false;
       const os = document.getElementById('osManagerSelect').value;
       managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/quickactions?os=' + encodeURIComponent(os))
+      apiFetch('/api/quickactions?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(actions => {
           if (actions.length === 0) {
@@ -758,7 +758,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/quickactions', {
+      apiFetch('/api/quickactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'os=' + encodeURIComponent(os) +
@@ -790,7 +790,7 @@ let jigglerEnabled = false;
         return;
       }
 
-      fetch('/api/quickactions/delete', {
+      apiFetch('/api/quickactions/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'os=' + encodeURIComponent(os) + '&cmd=' + encodeURIComponent(cmd)

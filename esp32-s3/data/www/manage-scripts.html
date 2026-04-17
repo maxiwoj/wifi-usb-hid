@@ -82,6 +82,7 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
     </div>
   </div>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
   <script>
     function loadQuickScriptsManager() {
@@ -91,7 +92,7 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
       const os = document.getElementById('osManagerSelect').value;
       managerDiv.innerHTML = '<p style="color: #6b7280;">Loading...</p>';
 
-      fetch('/api/quickscripts?os=' + encodeURIComponent(os))
+      apiFetch('/api/quickscripts?os=' + encodeURIComponent(os))
         .then(response => response.json())
         .then(scripts => {
           if (scripts.length === 0) {
@@ -149,7 +150,7 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
         return;
       }
 
-      fetch('/api/quickscripts', {
+      apiFetch('/api/quickscripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'os=' + encodeURIComponent(os) +
@@ -190,7 +191,7 @@ ENTER" style="min-height: 120px; font-family: monospace;"></textarea>
         return;
       }
 
-      fetch('/api/quickscripts/delete', {
+      apiFetch('/api/quickscripts/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'os=' + encodeURIComponent(os) + '&id=' + encodeURIComponent(id)

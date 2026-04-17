@@ -52,6 +52,14 @@ bool httpsEnabled = false;
       server.requestAuthentication(); \
     } \
   } while(0)
+#define SERVER_SEND_HEADER(name, value) \
+  do { \
+    if (httpsEnabled && secureServer.client()) { \
+      secureServer.sendHeader(name, value); \
+    } else { \
+      server.sendHeader(name, value); \
+    } \
+  } while(0)
 #else
 #define SERVER_SEND(code, type, content) server.send(code, type, content)
 #define SERVER_HAS_ARG(argname) server.hasArg(argname)
@@ -59,7 +67,46 @@ bool httpsEnabled = false;
 #define SERVER_STREAM_FILE(file, type) server.streamFile(file, type)
 #define SERVER_AUTHENTICATE(user, pass) server.authenticate(user, pass)
 #define SERVER_REQUEST_AUTH() server.requestAuthentication()
+#define SERVER_SEND_HEADER(name, value) server.sendHeader(name, value)
 #endif
+
+// Session token for Bearer-based auth (stored in RAM, cleared on reboot)
+static String sessionToken = "";
+static bool tokenActive = false;
+
+static String generateToken() {
+  String token = "";
+  randomSeed(micros() ^ ESP.getChipId());
+  for (int i = 0; i < 32; i++) {
+    token += String((uint8_t)random(16), HEX);
+  }
+  return token;
+}
+
+static String getAuthorizationHeader() {
+#if ENABLE_HTTPS
+  if (httpsEnabled && secureServer.client()) return secureServer.header("Authorization");
+#endif
+  return server.header("Authorization");
+}
+
+// Extract the "session" cookie value from the Cookie request header
+static String getSessionCookie() {
+#if ENABLE_HTTPS
+  String h = (httpsEnabled && secureServer.client()) ? secureServer.header("Cookie") : server.header("Cookie");
+#else
+  String h = server.header("Cookie");
+#endif
+  int idx = h.indexOf("session=");
+  if (idx == -1) return "";
+  idx += 8;
+  int end = h.indexOf(';', idx);
+  return (end == -1) ? h.substring(idx) : h.substring(idx, end);
+}
+
+static bool validateSessionToken(const String& token) {
+  return tokenActive && token.length() > 0 && token == sessionToken;
+}
 
 String getContentType(String filename) {
   if (filename.endsWith(".html")) return "text/html";
@@ -111,23 +158,20 @@ void serveStaticFile(String path, String contentType) {
   }
 }
 
-// Try to serve the file directly
-void handleNotFound() {
-  if (!checkAuthentication()) return;
-  
-  String path = server.uri();
-#if ENABLE_HTTPS
-  if (httpsEnabled && secureServer.client()) {
-    path = secureServer.uri();
-  }
-#endif
-
-  if (handleStaticFile(path)) return;
-  
-  SERVER_SEND(404, "text/plain", "File not found: " + path);
-}
-
 bool checkAuthentication() {
+  // 1. Bearer token (JS fetch() calls via apiFetch())
+  String authHeader = getAuthorizationHeader();
+  if (authHeader.startsWith("Bearer ")) {
+    String token = authHeader.substring(7);
+    if (validateSessionToken(token)) return true;
+    SERVER_SEND(401, "application/json", "{\"status\":\"error\",\"message\":\"Invalid or expired token\"}");
+    return false;
+  }
+
+  // 2. Session cookie (set by the login endpoint, sent automatically by the browser)
+  if (validateSessionToken(getSessionCookie())) return true;
+
+  // 3. HTTP Basic Auth fallback for external scripts/tools (e.g. remote-type.py)
   if (!SERVER_AUTHENTICATE(WEB_AUTH_USER, WEB_AUTH_PASS)) {
     SERVER_REQUEST_AUTH();
     return false;
@@ -135,8 +179,66 @@ bool checkAuthentication() {
   return true;
 }
 
+void handleLogin() {
+  if (SERVER_HAS_ARG("username") && SERVER_HAS_ARG("password")) {
+    if (SERVER_ARG("username") == WEB_AUTH_USER && SERVER_ARG("password") == WEB_AUTH_PASS) {
+      sessionToken = generateToken();
+      tokenActive = true;
+      SERVER_SEND_HEADER("Set-Cookie", "session=" + sessionToken + "; Path=/; HttpOnly; SameSite=Strict");
+      SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"token\":\"" + sessionToken + "\"}");
+    } else {
+      SERVER_SEND(401, "application/json", "{\"status\":\"error\",\"message\":\"Invalid credentials\"}");
+    }
+  } else {
+    SERVER_SEND(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing username or password\"}");
+  }
+}
+
+void handleLogout() {
+  if (!checkAuthentication()) return;
+  tokenActive = false;
+  sessionToken = "";
+  SERVER_SEND_HEADER("Set-Cookie", "session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
+  SERVER_SEND(200, "application/json", "{\"status\":\"ok\",\"message\":\"Logged out\"}");
+}
+
+// HTML pages require a valid session cookie to prevent device-purpose fingerprinting.
+// Non-HTML assets (auth.js, style.css, favicon) are served freely — they are needed
+// by the login gate itself and reveal nothing about the device's functionality.
+void handleNotFound() {
+  String path = server.uri();
+#if ENABLE_HTTPS
+  if (httpsEnabled && secureServer.client()) {
+    path = secureServer.uri();
+  }
+#endif
+
+  if (path == "/" || path.endsWith(".html")) {
+    if (!validateSessionToken(getSessionCookie())) {
+      SERVER_SEND(200, "text/html",
+        "<!DOCTYPE html><html><head>"
+        "<meta charset='UTF-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<link rel='icon' type='image/png' href='/favicon.png'>"
+        "<script src='/auth.js'></script>"
+        "</head><body></body></html>");
+      return;
+    }
+  }
+
+  if (handleStaticFile(path)) return;
+
+  SERVER_SEND(404, "text/plain", "File not found: " + path);
+}
+
 void setupWebServer() {
+  // Collect headers needed for token auth and session cookie validation
+  const char* collectHeaders[] = {"Authorization", "Cookie"};
+  server.collectHeaders(collectHeaders, 2);
+
   // Register API routes on HTTP server
+  server.on("/api/login", HTTP_POST, handleLogin);
+  server.on("/api/logout", HTTP_POST, handleLogout);
   server.on("/api/command", HTTP_POST, handleCommand);
   server.on("/api/script", HTTP_POST, handleScript);
   server.on("/api/jiggler", HTTP_GET, handleJiggler);
@@ -165,7 +267,7 @@ void setupWebServer() {
   server.on("/api/files/download", HTTP_GET, handleFileDownload);
   server.on("/api/files/create_dir", HTTP_POST, handleCreateDir);
 
-  // Catch-all for static files
+  // Catch-all: HTML pages are cookie-gated; non-HTML assets served freely
   server.onNotFound(handleNotFound);
 
   server.begin();
@@ -181,7 +283,12 @@ void setupWebServer() {
 
   secureServer.getServer().setRSACert(&serverCert, &serverKey);
 
+  const char* secureCollectHeaders[] = {"Authorization", "Cookie"};
+  secureServer.collectHeaders(secureCollectHeaders, 2);
+
   // Register API routes on HTTPS server
+  secureServer.on("/api/login", HTTP_POST, handleLogin);
+  secureServer.on("/api/logout", HTTP_POST, handleLogout);
   secureServer.on("/api/command", HTTP_POST, handleCommand);
   secureServer.on("/api/script", HTTP_POST, handleScript);
   secureServer.on("/api/jiggler", HTTP_GET, handleJiggler);

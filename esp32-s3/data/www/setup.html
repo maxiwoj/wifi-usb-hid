@@ -122,6 +122,7 @@
     }
   </style>
   <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="auth.js"></script>
 </head>
 <body>
   <div class="container">
@@ -158,7 +159,7 @@
     let selectedSSID = '';
 
     function loadWiFiInfo() {
-      fetch('/api/wifi')
+      apiFetch('/api/wifi')
         .then(response => response.json())
         .then(data => {
           document.getElementById('currentSSID').textContent = data.ssid || 'None';
@@ -204,7 +205,7 @@
       const networkList = document.getElementById('networkList');
       networkList.innerHTML = '<p>Scanning...</p>';
 
-      fetch('/api/scan')
+      apiFetch('/api/scan')
         .then(response => response.json())
         .then(networks => {
           if (networks.length === 0) {
@@ -249,7 +250,7 @@
         return;
       }
 
-      fetch('/api/wifi', {
+      apiFetch('/api/wifi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'ssid=' + encodeURIComponent(ssid) + '&password=' + encodeURIComponent(password)
@@ -271,7 +272,7 @@
     function deleteWiFi(ssid) {
       if (!confirm('Delete saved network: ' + ssid + '?')) return;
       
-      fetch('/api/wifi/delete', {
+      apiFetch('/api/wifi/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'ssid=' + encodeURIComponent(ssid)
@@ -289,7 +290,7 @@
     function restartDevice() {
       if (!confirm('Restart device to connect to saved networks?')) return;
       
-      fetch('/api/command', {
+      apiFetch('/api/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'cmd=RESTART'
